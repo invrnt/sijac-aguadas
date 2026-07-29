@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export function BrandMark({
   compact = false,
@@ -9,15 +10,14 @@ export function BrandMark({
 }) {
   const mark = (
     <span className={`brand-mark ${compact ? "brand-mark-compact" : ""}`}>
-      <span className="brand-monogram" aria-hidden="true">
-        SJ
-      </span>
-      {!compact && (
-        <span className="brand-wordmark">
-          <strong>SIJAC</strong>
-          <small>Aguadas</small>
-        </span>
-      )}
+      <Image
+        className="brand-logo"
+        src={compact ? "/icon-192.png" : "/sijac-logo.png"}
+        alt="SIJAC Aguadas"
+        width={compact ? 44 : 224}
+        height={compact ? 44 : 128}
+        priority={!compact}
+      />
     </span>
   );
   return linked ? (
