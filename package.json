@@ -18,7 +18,7 @@
     "lint": "eslint . --ignore-pattern .next --ignore-pattern coverage",
     "typecheck": "tsc --noEmit",
     "db:generate": "bunx drizzle-kit generate",
-    "db:migrate": "bunx drizzle-kit migrate",
+    "db:migrate": "bun run scripts/migrate.ts",
     "db:studio": "bunx drizzle-kit studio",
     "db:seed": "bun run scripts/seed.ts",
     "import:juntas": "bun run scripts/import-juntas.ts",
