@@ -5,6 +5,8 @@ import { nextCookies } from "better-auth/next-js";
 import { getDb } from "@/db";
 import * as schema from "@/db/schema";
 import { env } from "@/lib/env";
+import { InvitationEmail } from "@/emails/InvitationEmail";
+import { PasswordResetEmail } from "@/emails/PasswordResetEmail";
 import { sendAccessEmail } from "@/lib/mail";
 
 export const auth = betterAuth({
@@ -27,10 +29,18 @@ export const auth = betterAuth({
     maxPasswordLength: 128,
     requireEmailVerification: false,
     sendResetPassword: async ({ user, url }) => {
+      const callbackUrl = new URL(url).searchParams.get("callbackURL") ?? "";
+      const isInvitation = callbackUrl.includes("invitation=1");
       await sendAccessEmail({
         to: user.email,
-        subject: "Recuperación de acceso a SIJAC Aguadas",
-        html: `<p>Recibimos una solicitud para restablecer su acceso.</p><p><a href="${url}">Crear una nueva contraseña</a></p><p>El enlace es temporal y solo puede usarse una vez.</p>`,
+        subject: isInvitation
+          ? "Active su cuenta de SIJAC Aguadas"
+          : "Recuperación de acceso a SIJAC Aguadas",
+        email: isInvitation ? (
+          <InvitationEmail userName={user.name} invitationUrl={url} />
+        ) : (
+          <PasswordResetEmail userName={user.name} resetUrl={url} />
+        ),
       });
     },
   },

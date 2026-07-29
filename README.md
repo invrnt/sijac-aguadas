@@ -11,6 +11,7 @@ usuarios, roles y auditoría.
 - Better Auth para cuentas, sesiones, recuperación, bloqueo y roles
 - PostgreSQL de Supabase con Drizzle ORM
 - Supabase Storage privado
+- React Email y Resend para correos transaccionales responsive
 - Bun como gestor, runtime local y ejecutor de pruebas
 - Vercel como destino de despliegue
 
@@ -61,6 +62,19 @@ con el prefijo `NEXT_PUBLIC_`.
 | `DEMO_MODE` | Solo local | Habilita la demostración sin base de datos |
 | `SEED_ADMIN_EMAIL` | No | Correo de cuenta inicial |
 | `SEED_ADMIN_PASSWORD` | Producción | Contraseña inicial explícita |
+
+## Correos transaccionales
+
+Las invitaciones y recuperaciones usan componentes React Email mobile first,
+incluyen texto de previsualización, botón accesible, URL de respaldo y versión
+de texto plano. Para revisar las plantillas localmente:
+
+```bash
+bun run email:dev
+```
+
+La previsualización no envía mensajes. El envío real requiere `RESEND_API_KEY`
+y un remitente verificado en `EMAIL_FROM`.
 
 ## Desplegar en Vercel
 

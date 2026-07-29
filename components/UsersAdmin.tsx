@@ -98,7 +98,7 @@ export function UsersAdmin({ demo }: { demo: boolean }) {
       row.id = result.data.user.id;
       await authClient.requestPasswordReset({
         email: row.email,
-        redirectTo: "/nueva-contrasena",
+        redirectTo: "/nueva-contrasena?invitation=1",
       });
     }
     setUsers((current) => [row, ...current]);

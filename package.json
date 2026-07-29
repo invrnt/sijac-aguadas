@@ -22,7 +22,8 @@
     "db:studio": "bunx drizzle-kit studio",
     "db:seed": "bun run scripts/seed.ts",
     "import:juntas": "bun run scripts/import-juntas.ts",
-    "setup:storage": "bun run scripts/setup-storage.ts"
+    "setup:storage": "bun run scripts/setup-storage.ts",
+    "email:dev": "bunx email dev --dir emails"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.111.0",
@@ -36,6 +37,7 @@
     "postgres": "^3.4.9",
     "react": "19.2.6",
     "react-dom": "19.2.6",
+    "react-email": "^6.9.1",
     "sharp": "^0.35.0",
     "zod": "^4.4.3"
   },
@@ -55,6 +57,7 @@
   },
   "type": "module",
   "overrides": {
+    "brace-expansion": "5.0.8",
     "esbuild": "0.25.12",
     "postcss": "8.5.24",
     "sharp": "0.35.3"
