@@ -18,8 +18,7 @@
     {
       "binding": "DB",
       "database_name": "sijac",
-      // Reemplace con el id que devuelve `wrangler d1 create sijac`.
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "91402af9-bd7f-49af-a39a-a517eeefb124",
       "migrations_dir": "drizzle"
     }
   ],
@@ -40,7 +39,7 @@
         {
           "binding": "DB",
           "database_name": "sijac",
-          "database_id": "00000000-0000-0000-0000-000000000000",
+          "database_id": "91402af9-bd7f-49af-a39a-a517eeefb124",
           "migrations_dir": "drizzle",
           "remote": true
         }

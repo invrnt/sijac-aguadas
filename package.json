@@ -20,8 +20,8 @@
     "db:generate": "bunx drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply sijac --local",
     "db:migrate:remote": "wrangler d1 migrations apply sijac --remote",
-    "db:seed": "bun run scripts/seed.ts",
-    "import:juntas": "bun run scripts/import-juntas.ts",
+    "db:seed": "tsx scripts/seed.ts",
+    "import:juntas": "tsx scripts/import-juntas.ts",
     "email:dev": "bunx email dev --dir emails"
   },
   "dependencies": {
@@ -48,12 +48,12 @@
     "esbuild": "^0.25.0",
     "eslint": "9.39.4",
     "eslint-config-next": "16.2.11",
+    "tsx": "^4.23.15",
     "typescript": "5.9.3",
     "wrangler": "^4.151.3"
   },
   "type": "module",
   "overrides": {
-    "brace-expansion": "5.0.8",
     "esbuild": "0.25.12",
     "postcss": "8.5.24"
   }
