@@ -41,6 +41,7 @@ export function JuntaDetail({
   const [message, setMessage] = useState<string | null>(null);
   const [officers, setOfficers] = useState(dignatarios);
   const [agreements, setAgreements] = useState(convenios);
+  const [documents, setDocuments] = useState(files);
   const [showOfficerForm, setShowOfficerForm] = useState(false);
   const [showAgreementForm, setShowAgreementForm] = useState(false);
   const tabs = [
@@ -54,7 +55,9 @@ export function JuntaDetail({
     event.preventDefault();
     setUploading(true);
     setMessage(null);
-    const form = new FormData(event.currentTarget);
+    // currentTarget deja de estar disponible después del primer await.
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     form.set("juntaId", junta.id);
     const response = await fetch("/api/files", { method: "POST", body: form });
     const result = await response.json();
@@ -64,7 +67,9 @@ export function JuntaDetail({
         ? "Archivo cargado correctamente."
         : result.error ?? "No fue posible cargar el archivo.",
     );
-    if (response.ok) event.currentTarget.reset();
+    if (!response.ok) return;
+    setDocuments((current) => [...current, result.data]);
+    formElement.reset();
   }
 
   async function createOfficer(event: FormEvent<HTMLFormElement>) {
@@ -169,6 +174,7 @@ export function JuntaDetail({
                     <dd>
                       {junta.recognitionDate
                         ? new Intl.DateTimeFormat("es-CO", {
+                            timeZone: "America/Bogota",
                             dateStyle: "long",
                           }).format(new Date(`${junta.recognitionDate}T12:00:00`))
                         : "No registrada"}
@@ -380,7 +386,7 @@ export function JuntaDetail({
                     {message && <p className="form-message">{message}</p>}
                   </form>
                 )}
-                {files.map((file) => (
+                {documents.map((file) => (
                   <div className="document-row" key={file.id}>
                     <span>
                       <strong>{file.originalName}</strong>
@@ -419,12 +425,13 @@ export function JuntaDetail({
               </div>
               <div>
                 <dt>Documentos</dt>
-                <dd>{files.length} archivos</dd>
+                <dd>{documents.length} archivos</dd>
               </div>
               <div>
                 <dt>Actualizada</dt>
                 <dd>
                   {new Intl.DateTimeFormat("es-CO", {
+                    timeZone: "America/Bogota",
                     dateStyle: "medium",
                   }).format(new Date(junta.updatedAt))}
                 </dd>

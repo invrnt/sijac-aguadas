@@ -72,7 +72,9 @@ export function UsersAdmin({ demo }: { demo: boolean }) {
 
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    // currentTarget deja de estar disponible después del primer await.
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const row: UserRow = {
       id: crypto.randomUUID(),
       name: String(form.get("name")),
@@ -108,7 +110,7 @@ export function UsersAdmin({ demo }: { demo: boolean }) {
         ? "Cuenta de demostración creada."
         : "La invitación será enviada al correo registrado.",
     );
-    event.currentTarget.reset();
+    formElement.reset();
   }
 
   async function toggle(user: UserRow) {
@@ -217,6 +219,7 @@ export function UsersAdmin({ demo }: { demo: boolean }) {
                 <td>
                   {user.lastAccess
                     ? new Intl.DateTimeFormat("es-CO", {
+                        timeZone: "America/Bogota",
                         dateStyle: "medium",
                         timeStyle: "short",
                       }).format(new Date(user.lastAccess))

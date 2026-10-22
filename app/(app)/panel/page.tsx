@@ -113,6 +113,7 @@ export default async function DashboardPage() {
                   </span>
                   <time dateTime={item.createdAt}>
                     {new Intl.DateTimeFormat("es-CO", {
+                      timeZone: "America/Bogota",
                       day: "numeric",
                       month: "short",
                       hour: "numeric",
@@ -167,6 +168,7 @@ export default async function DashboardPage() {
                   <span>
                     {meeting.juntaName} ·{" "}
                     {new Intl.DateTimeFormat("es-CO", {
+                      timeZone: "America/Bogota",
                       dateStyle: "medium",
                     }).format(new Date(meeting.startsAt))}
                   </span>

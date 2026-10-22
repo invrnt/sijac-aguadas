@@ -59,6 +59,7 @@ export async function GET(
   addLine(bundle.minute.juntaName, 11, true, 20);
   addLine(
     `Reunión: ${bundle.meeting.title} · ${new Intl.DateTimeFormat("es-CO", {
+      timeZone: "America/Bogota",
       dateStyle: "long",
     }).format(new Date(bundle.meeting.startsAt))}`,
     9,

@@ -31,6 +31,7 @@ export default async function AuditPage() {
           <div className="audit-row" key={event.id}>
             <time dateTime={event.createdAt}>
               {new Intl.DateTimeFormat("es-CO", {
+                timeZone: "America/Bogota",
                 dateStyle: "medium",
                 timeStyle: "short",
               }).format(new Date(event.createdAt))}

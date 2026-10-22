@@ -65,6 +65,7 @@ export function MeetingDetail({
           <div>
             <div className="stat-value" style={{ fontSize: "1.15rem" }}>
               {new Intl.DateTimeFormat("es-CO", {
+                timeZone: "America/Bogota",
                 dateStyle: "medium",
                 timeStyle: "short",
               }).format(new Date(meeting.startsAt))}

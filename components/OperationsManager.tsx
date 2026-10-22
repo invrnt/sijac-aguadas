@@ -69,7 +69,9 @@ export function OperationsManager({
     event.preventDefault();
     setSaving(true);
     setMessage(null);
-    const form = new FormData(event.currentTarget);
+    // currentTarget deja de estar disponible después del primer await.
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const raw = Object.fromEntries(form);
     const payload =
       entity === "reuniones"
@@ -77,7 +79,8 @@ export function OperationsManager({
             juntaId: raw.juntaId,
             title: raw.title,
             type: raw.type,
-            startsAt: raw.date,
+            // datetime-local no lleva zona horaria; el navegador la conoce.
+            startsAt: new Date(String(raw.date)).toISOString(),
             location: raw.location,
             status: "borrador",
           }
@@ -131,7 +134,7 @@ export function OperationsManager({
       } as RecordItem,
       ...current,
     ]);
-    event.currentTarget.reset();
+    formElement.reset();
     setMessage(`${labels[entity].singular} registrada correctamente.`);
     setSaving(false);
     setOpen(false);
@@ -374,7 +377,7 @@ function OperationCard({ item, entity }: { item: RecordItem; entity: Entity }) {
         </span>
         <span>
           <CalendarDays size={14} />
-          {new Intl.DateTimeFormat("es-CO", { dateStyle: "medium" }).format(
+          {new Intl.DateTimeFormat("es-CO", { timeZone: "America/Bogota", dateStyle: "medium" }).format(
             new Date(date),
           )}
         </span>
