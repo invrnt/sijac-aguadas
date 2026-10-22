@@ -28,6 +28,10 @@
       "bucket_name": "sijac-private"
     }
   ],
+  "vars": {
+    "BETTER_AUTH_URL": "https://sijac-aguadas.juan-c.workers.dev",
+    "NEXT_PUBLIC_APP_URL": "https://sijac-aguadas.juan-c.workers.dev"
+  },
   "observability": {
     "enabled": true
   },
