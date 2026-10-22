@@ -29,8 +29,8 @@
     }
   ],
   "vars": {
-    "BETTER_AUTH_URL": "https://sijac-aguadas.juan-c.workers.dev",
-    "NEXT_PUBLIC_APP_URL": "https://sijac-aguadas.juan-c.workers.dev"
+    "BETTER_AUTH_URL": "https://sijac-aguadas.jcga.workers.dev",
+    "NEXT_PUBLIC_APP_URL": "https://sijac-aguadas.jcga.workers.dev"
   },
   "observability": {
     "enabled": true
