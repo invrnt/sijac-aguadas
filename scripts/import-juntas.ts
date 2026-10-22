@@ -1,8 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { eq, or } from "drizzle-orm";
-import { getDb } from "@/db";
 import { auditLogs, juntas } from "@/db/schema";
+import { openScriptDb } from "./d1";
 
 type Row = Record<string, string>;
 
@@ -39,7 +39,7 @@ function parseCsv(source: string): Row[] {
 const fileArgument = process.argv[2];
 if (!fileArgument) {
   throw new Error(
-    "Uso: bun run import:juntas -- ruta/al/archivo.csv [--confirm]",
+    "Uso: bun run import:juntas -- ruta/al/archivo.csv [--confirm] [--remote]",
   );
 }
 
@@ -84,44 +84,51 @@ if (errors.length || !confirmed) {
   process.exit(errors.length ? 1 : 0);
 }
 
-const db = getDb();
-for (const row of rows) {
-  const [duplicate] = await db
-    .select({ id: juntas.id })
-    .from(juntas)
-    .where(
-      or(
-        eq(juntas.code, row.codigo),
-        ...(row.nit ? [eq(juntas.nit, row.nit)] : []),
-        ...(row.personeria ? [eq(juntas.legalEntityNumber, row.personeria)] : []),
-      ),
-    )
-    .limit(1);
-  if (duplicate) continue;
-  const [created] = await db
-    .insert(juntas)
-    .values({
-      code: row.codigo,
-      officialName: row.nombre,
-      neighborhood: row.vereda_barrio,
-      sourceNeighborhood: row.vereda_barrio_original || row.vereda_barrio,
-      zone: row.zona.toLowerCase() as "urbana" | "rural",
-      affiliatesCount: Number(row.afiliados || 0),
-      nit: row.nit || null,
-      legalEntityNumber: row.personeria || null,
-      resolutionNumber: row.resolucion || null,
-      address: row.direccion || null,
-      phone: row.telefono || null,
-      email: row.correo || null,
-      pendingFields: required.filter((key) => !row[key]),
-    })
-    .returning({ id: juntas.id });
-  await db.insert(auditLogs).values({
-    action: "import",
-    entityType: "junta",
-    entityId: created.id,
-    newValues: { source: resolve(fileArgument), code: row.codigo },
-  });
+const { db, dispose } = await openScriptDb();
+try {
+  for (const row of rows) {
+    const [duplicate] = await db
+      .select({ id: juntas.id })
+      .from(juntas)
+      .where(
+        or(
+          eq(juntas.code, row.codigo),
+          ...(row.nit ? [eq(juntas.nit, row.nit)] : []),
+          ...(row.personeria
+            ? [eq(juntas.legalEntityNumber, row.personeria)]
+            : []),
+        ),
+      )
+      .limit(1);
+    if (duplicate) continue;
+    const id = crypto.randomUUID();
+    await db.batch([
+      db.insert(juntas).values({
+        id,
+        code: row.codigo,
+        officialName: row.nombre,
+        neighborhood: row.vereda_barrio,
+        sourceNeighborhood: row.vereda_barrio_original || row.vereda_barrio,
+        zone: row.zona.toLowerCase() as "urbana" | "rural",
+        affiliatesCount: Number(row.afiliados || 0),
+        nit: row.nit || null,
+        legalEntityNumber: row.personeria || null,
+        resolutionNumber: row.resolucion || null,
+        address: row.direccion || null,
+        phone: row.telefono || null,
+        email: row.correo || null,
+        pendingFields: required.filter((key) => !row[key]),
+      }),
+      db.insert(auditLogs).values({
+        action: "import",
+        entityType: "junta",
+        entityId: id,
+        newValues: { source: resolve(fileArgument), code: row.codigo },
+      }),
+    ]);
+  }
+} finally {
+  await dispose();
 }
 
 console.info(`Importación terminada: ${rows.length} filas procesadas.`);

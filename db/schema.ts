@@ -1,33 +1,51 @@
 import { sql } from "drizzle-orm";
 import {
-  bigint,
-  boolean,
-  date,
   index,
   integer,
-  jsonb,
-  numeric,
-  pgEnum,
-  pgTable,
   primaryKey,
+  real,
+  sqliteTable,
   text,
-  timestamp,
   uniqueIndex,
-  uuid,
-} from "drizzle-orm/pg-core";
+} from "drizzle-orm/sqlite-core";
+
+// D1 (SQLite) no tiene tipos nativos de fecha, UUID, booleano ni JSON:
+// las fechas con hora se guardan como milisegundos, las fechas simples como
+// texto ISO (YYYY-MM-DD) y los JSON como texto.
+function timestamp(name: string) {
+  return integer(name, { mode: "timestamp_ms" });
+}
+
+function boolean(name: string) {
+  return integer(name, { mode: "boolean" });
+}
+
+function date(name: string) {
+  return text(name);
+}
+
+function id() {
+  return text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID());
+}
+
+function createdAt() {
+  return timestamp("created_at")
+    .$defaultFn(() => new Date())
+    .notNull();
+}
 
 const timestamps = {
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .defaultNow()
+  createdAt: createdAt(),
+  updatedAt: timestamp("updated_at")
+    .$defaultFn(() => new Date())
     .$onUpdate(() => new Date())
     .notNull(),
 };
 
 // Better Auth
-export const users = pgTable(
+export const users = sqliteTable(
   "users",
   {
     id: text("id").primaryKey(),
@@ -40,8 +58,8 @@ export const users = pgTable(
     role: text("role").default("user").notNull(),
     banned: boolean("banned").default(false),
     banReason: text("ban_reason"),
-    banExpires: timestamp("ban_expires", { withTimezone: true }),
-    lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+    banExpires: timestamp("ban_expires"),
+    lastLoginAt: timestamp("last_login_at"),
     ...timestamps,
   },
   (table) => [
@@ -51,11 +69,11 @@ export const users = pgTable(
   ],
 );
 
-export const sessions = pgTable(
+export const sessions = sqliteTable(
   "sessions",
   {
     id: text("id").primaryKey(),
-    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
     token: text("token").notNull(),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
@@ -71,7 +89,7 @@ export const sessions = pgTable(
   ],
 );
 
-export const accounts = pgTable(
+export const accounts = sqliteTable(
   "accounts",
   {
     id: text("id").primaryKey(),
@@ -83,12 +101,8 @@ export const accounts = pgTable(
     accessToken: text("access_token"),
     refreshToken: text("refresh_token"),
     idToken: text("id_token"),
-    accessTokenExpiresAt: timestamp("access_token_expires_at", {
-      withTimezone: true,
-    }),
-    refreshTokenExpiresAt: timestamp("refresh_token_expires_at", {
-      withTimezone: true,
-    }),
+    accessTokenExpiresAt: timestamp("access_token_expires_at"),
+    refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
     scope: text("scope"),
     password: text("password"),
     ...timestamps,
@@ -102,92 +116,88 @@ export const accounts = pgTable(
   ],
 );
 
-export const verifications = pgTable(
+export const verifications = sqliteTable(
   "verifications",
   {
     id: text("id").primaryKey(),
     identifier: text("identifier").notNull(),
     value: text("value").notNull(),
-    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
     ...timestamps,
   },
   (table) => [index("verifications_identifier_idx").on(table.identifier)],
 );
 
-export const rateLimits = pgTable("rate_limits", {
+export const rateLimits = sqliteTable("rate_limits", {
   id: text("id").primaryKey(),
   key: text("key").notNull().unique(),
   count: integer("count").notNull(),
-  lastRequest: bigintTimestamp("last_request").notNull(),
+  lastRequest: integer("last_request").notNull(),
 });
 
-function bigintTimestamp(name: string) {
-  return bigint(name, { mode: "number" });
-}
-
 // Catálogos y negocio
-export const juntaStatus = pgEnum("junta_status", [
+export const juntaStatus = [
   "activa",
   "inactiva",
   "archivada",
-]);
-export const zoneType = pgEnum("zone_type", ["urbana", "rural"]);
-export const agreementStatus = pgEnum("agreement_status", [
+] as const;
+export const zoneType = ["urbana", "rural"] as const;
+export const agreementStatus = [
   "pendiente",
   "vigente",
   "suspendido",
   "finalizado",
-]);
-export const meetingStatus = pgEnum("meeting_status", [
+] as const;
+export const meetingStatus = [
   "borrador",
   "convocada",
   "en_curso",
   "finalizada",
   "cancelada",
-]);
-export const minuteStatus = pgEnum("minute_status", [
+] as const;
+export const minuteStatus = [
   "borrador",
   "en_revision",
   "aprobada",
   "cerrada",
   "anulada",
-]);
-export const commitmentStatus = pgEnum("commitment_status", [
+] as const;
+export const commitmentStatus = [
   "pendiente",
   "en_curso",
   "bloqueado",
   "completado",
   "cancelado",
-]);
-export const activityStatus = pgEnum("activity_status", [
+] as const;
+export const activityStatus = [
   "planeada",
   "en_ejecucion",
   "completada",
   "aplazada",
   "cancelada",
-]);
-export const fileStatus = pgEnum("file_status", ["activo", "archivado"]);
-export const attendanceStatus = pgEnum("attendance_status", [
+] as const;
+export const fileStatus = ["activo", "archivado"] as const;
+export const attendanceStatus = [
   "asistio",
   "no_asistio",
   "excusa",
-]);
+] as const;
 
-export const juntas = pgTable(
+export const juntas = sqliteTable(
   "juntas",
   {
-    id: uuid("id").defaultRandom().primaryKey(),
+    id: id(),
     code: text("code").notNull(),
     officialName: text("official_name").notNull(),
     neighborhood: text("neighborhood").notNull(),
     sourceNeighborhood: text("source_neighborhood"),
     municipality: text("municipality").default("Aguadas").notNull(),
     department: text("department").default("Caldas").notNull(),
-    zone: zoneType("zone").notNull(),
+    zone: text("zone", { enum: zoneType }).notNull(),
     affiliatesCount: integer("affiliates_count").default(0).notNull(),
     affiliatesUpdatedAt: date("affiliates_updated_at"),
-    status: juntaStatus("status").default("activa").notNull(),
-    previousStatus: juntaStatus("previous_status"),
+    status: text("status", { enum: juntaStatus }).default("activa").notNull(),
+    previousStatus: text("previous_status", { enum: juntaStatus }),
     nit: text("nit"),
     nitPending: boolean("nit_pending").default(false).notNull(),
     legalEntityNumber: text("legal_entity_number"),
@@ -198,10 +208,13 @@ export const juntas = pgTable(
     phone: text("phone"),
     email: text("email"),
     locationReference: text("location_reference"),
-    latitude: numeric("latitude", { precision: 9, scale: 6 }),
-    longitude: numeric("longitude", { precision: 9, scale: 6 }),
-    pendingFields: text("pending_fields").array().default([]).notNull(),
-    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    latitude: real("latitude"),
+    longitude: real("longitude"),
+    pendingFields: text("pending_fields", { mode: "json" })
+      .$type<string[]>()
+      .$defaultFn(() => [])
+      .notNull(),
+    archivedAt: timestamp("archived_at"),
     createdBy: text("created_by").references(() => users.id, {
       onDelete: "set null",
     }),
@@ -222,11 +235,11 @@ export const juntas = pgTable(
   ],
 );
 
-export const dignatarios = pgTable(
+export const dignatarios = sqliteTable(
   "dignatarios",
   {
-    id: uuid("id").defaultRandom().primaryKey(),
-    juntaId: uuid("junta_id")
+    id: id(),
+    juntaId: text("junta_id")
       .notNull()
       .references(() => juntas.id, { onDelete: "restrict" }),
     position: text("position").notNull(),
@@ -254,18 +267,18 @@ export const dignatarios = pgTable(
   ],
 );
 
-export const convenios = pgTable(
+export const convenios = sqliteTable(
   "convenios",
   {
-    id: uuid("id").defaultRandom().primaryKey(),
-    juntaId: uuid("junta_id")
+    id: id(),
+    juntaId: text("junta_id")
       .notNull()
       .references(() => juntas.id, { onDelete: "restrict" }),
     number: text("number").notNull(),
     year: integer("year").notNull(),
     description: text("description").notNull(),
-    status: agreementStatus("status").default("pendiente").notNull(),
-    value: numeric("value", { precision: 16, scale: 2 }),
+    status: text("status", { enum: agreementStatus }).default("pendiente").notNull(),
+    value: real("value"),
     startDate: date("start_date"),
     endDate: date("end_date"),
     createdBy: text("created_by").references(() => users.id, {
@@ -283,19 +296,19 @@ export const convenios = pgTable(
   ],
 );
 
-export const meetings = pgTable(
+export const meetings = sqliteTable(
   "meetings",
   {
-    id: uuid("id").defaultRandom().primaryKey(),
-    juntaId: uuid("junta_id")
+    id: id(),
+    juntaId: text("junta_id")
       .notNull()
       .references(() => juntas.id, { onDelete: "restrict" }),
     title: text("title").notNull(),
     type: text("type").default("ordinaria").notNull(),
-    startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
-    endsAt: timestamp("ends_at", { withTimezone: true }),
+    startsAt: timestamp("starts_at").notNull(),
+    endsAt: timestamp("ends_at"),
     location: text("location").notNull(),
-    status: meetingStatus("status").default("borrador").notNull(),
+    status: text("status", { enum: meetingStatus }).default("borrador").notNull(),
     notes: text("notes"),
     createdBy: text("created_by").references(() => users.id, {
       onDelete: "set null",
@@ -312,11 +325,11 @@ export const meetings = pgTable(
   ],
 );
 
-export const meetingAgendaItems = pgTable(
+export const meetingAgendaItems = sqliteTable(
   "meeting_agenda_items",
   {
-    id: uuid("id").defaultRandom().primaryKey(),
-    meetingId: uuid("meeting_id")
+    id: id(),
+    meetingId: text("meeting_id")
       .notNull()
       .references(() => meetings.id, { onDelete: "cascade" }),
     position: integer("position").notNull(),
@@ -333,17 +346,17 @@ export const meetingAgendaItems = pgTable(
   ],
 );
 
-export const meetingAttendance = pgTable(
+export const meetingAttendance = sqliteTable(
   "meeting_attendance",
   {
-    id: uuid("id").defaultRandom().primaryKey(),
-    meetingId: uuid("meeting_id")
+    id: id(),
+    meetingId: text("meeting_id")
       .notNull()
       .references(() => meetings.id, { onDelete: "restrict" }),
     documentNumber: text("document_number").notNull(),
     fullName: text("full_name").notNull(),
     roleOrRepresentation: text("role_or_representation"),
-    status: attendanceStatus("status").default("asistio").notNull(),
+    status: text("status", { enum: attendanceStatus }).default("asistio").notNull(),
     signatureStoragePath: text("signature_storage_path"),
     registeredBy: text("registered_by").references(() => users.id, {
       onDelete: "set null",
@@ -359,23 +372,23 @@ export const meetingAttendance = pgTable(
   ],
 );
 
-export const minutes = pgTable(
+export const minutes = sqliteTable(
   "minutes",
   {
-    id: uuid("id").defaultRandom().primaryKey(),
-    meetingId: uuid("meeting_id")
+    id: id(),
+    meetingId: text("meeting_id")
       .notNull()
       .unique()
       .references(() => meetings.id, { onDelete: "restrict" }),
     number: text("number").notNull(),
     year: integer("year").notNull(),
-    status: minuteStatus("status").default("borrador").notNull(),
+    status: text("status", { enum: minuteStatus }).default("borrador").notNull(),
     summary: text("summary"),
     quorumRequired: integer("quorum_required"),
     quorumPresent: integer("quorum_present"),
-    approvedAt: timestamp("approved_at", { withTimezone: true }),
-    closedAt: timestamp("closed_at", { withTimezone: true }),
-    reopenedAt: timestamp("reopened_at", { withTimezone: true }),
+    approvedAt: timestamp("approved_at"),
+    closedAt: timestamp("closed_at"),
+    reopenedAt: timestamp("reopened_at"),
     reopeningReason: text("reopening_reason"),
     cancellationReason: text("cancellation_reason"),
     createdBy: text("created_by").references(() => users.id, {
@@ -392,11 +405,11 @@ export const minutes = pgTable(
   ],
 );
 
-export const minuteSections = pgTable(
+export const minuteSections = sqliteTable(
   "minute_sections",
   {
-    id: uuid("id").defaultRandom().primaryKey(),
-    minuteId: uuid("minute_id")
+    id: id(),
+    minuteId: text("minute_id")
       .notNull()
       .references(() => minutes.id, { onDelete: "cascade" }),
     position: integer("position").notNull(),
@@ -412,9 +425,9 @@ export const minuteSections = pgTable(
   ],
 );
 
-export const decisions = pgTable("decisions", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  minuteId: uuid("minute_id")
+export const decisions = sqliteTable("decisions", {
+  id: id(),
+  minuteId: text("minute_id")
     .notNull()
     .references(() => minutes.id, { onDelete: "restrict" }),
   description: text("description").notNull(),
@@ -425,22 +438,22 @@ export const decisions = pgTable("decisions", {
   ...timestamps,
 });
 
-export const commitments = pgTable(
+export const commitments = sqliteTable(
   "commitments",
   {
-    id: uuid("id").defaultRandom().primaryKey(),
-    juntaId: uuid("junta_id")
+    id: id(),
+    juntaId: text("junta_id")
       .notNull()
       .references(() => juntas.id, { onDelete: "restrict" }),
-    minuteId: uuid("minute_id").references(() => minutes.id, {
+    minuteId: text("minute_id").references(() => minutes.id, {
       onDelete: "set null",
     }),
     title: text("title").notNull(),
     description: text("description"),
     responsibleName: text("responsible_name").notNull(),
     dueDate: date("due_date"),
-    status: commitmentStatus("status").default("pendiente").notNull(),
-    completedAt: timestamp("completed_at", { withTimezone: true }),
+    status: text("status", { enum: commitmentStatus }).default("pendiente").notNull(),
+    completedAt: timestamp("completed_at"),
     createdBy: text("created_by").references(() => users.id, {
       onDelete: "set null",
     }),
@@ -455,9 +468,9 @@ export const commitments = pgTable(
   ],
 );
 
-export const commitmentUpdates = pgTable("commitment_updates", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  commitmentId: uuid("commitment_id")
+export const commitmentUpdates = sqliteTable("commitment_updates", {
+  id: id(),
+  commitmentId: text("commitment_id")
     .notNull()
     .references(() => commitments.id, { onDelete: "cascade" }),
   note: text("note").notNull(),
@@ -465,16 +478,14 @@ export const commitmentUpdates = pgTable("commitment_updates", {
   createdBy: text("created_by").references(() => users.id, {
     onDelete: "set null",
   }),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .defaultNow()
-    .notNull(),
+  createdAt: createdAt(),
 });
 
-export const activities = pgTable(
+export const activities = sqliteTable(
   "activities",
   {
-    id: uuid("id").defaultRandom().primaryKey(),
-    juntaId: uuid("junta_id")
+    id: id(),
+    juntaId: text("junta_id")
       .notNull()
       .references(() => juntas.id, { onDelete: "restrict" }),
     title: text("title").notNull(),
@@ -483,7 +494,7 @@ export const activities = pgTable(
     location: text("location"),
     startDate: date("start_date").notNull(),
     endDate: date("end_date"),
-    status: activityStatus("status").default("planeada").notNull(),
+    status: text("status", { enum: activityStatus }).default("planeada").notNull(),
     beneficiariesCount: integer("beneficiaries_count"),
     createdBy: text("created_by").references(() => users.id, {
       onDelete: "set null",
@@ -499,25 +510,23 @@ export const activities = pgTable(
   ],
 );
 
-export const activityUpdates = pgTable("activity_updates", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  activityId: uuid("activity_id")
+export const activityUpdates = sqliteTable("activity_updates", {
+  id: id(),
+  activityId: text("activity_id")
     .notNull()
     .references(() => activities.id, { onDelete: "cascade" }),
   note: text("note").notNull(),
   createdBy: text("created_by").references(() => users.id, {
     onDelete: "set null",
   }),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .defaultNow()
-    .notNull(),
+  createdAt: createdAt(),
 });
 
-export const files = pgTable(
+export const files = sqliteTable(
   "files",
   {
-    id: uuid("id").defaultRandom().primaryKey(),
-    juntaId: uuid("junta_id")
+    id: id(),
+    juntaId: text("junta_id")
       .notNull()
       .references(() => juntas.id, { onDelete: "restrict" }),
     category: text("category").notNull(),
@@ -527,11 +536,11 @@ export const files = pgTable(
     sizeBytes: integer("size_bytes").notNull(),
     checksumSha256: text("checksum_sha256"),
     description: text("description"),
-    status: fileStatus("status").default("activo").notNull(),
+    status: text("status", { enum: fileStatus }).default("activo").notNull(),
     uploadedBy: text("uploaded_by").references(() => users.id, {
       onDelete: "set null",
     }),
-    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    archivedAt: timestamp("archived_at"),
     ...timestamps,
   },
   (table) => [
@@ -541,17 +550,15 @@ export const files = pgTable(
   ],
 );
 
-export const fileLinks = pgTable(
+export const fileLinks = sqliteTable(
   "file_links",
   {
-    fileId: uuid("file_id")
+    fileId: text("file_id")
       .notNull()
       .references(() => files.id, { onDelete: "cascade" }),
     entityType: text("entity_type").notNull(),
-    entityId: uuid("entity_id").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
+    entityId: text("entity_id").notNull(),
+    createdAt: createdAt(),
   },
   (table) => [
     primaryKey({
@@ -561,9 +568,9 @@ export const fileLinks = pgTable(
   ],
 );
 
-export const observations = pgTable("observations", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  juntaId: uuid("junta_id")
+export const observations = sqliteTable("observations", {
+  id: id(),
+  juntaId: text("junta_id")
     .notNull()
     .references(() => juntas.id, { onDelete: "restrict" }),
   content: text("content").notNull(),
@@ -573,10 +580,10 @@ export const observations = pgTable("observations", {
   ...timestamps,
 });
 
-export const auditLogs = pgTable(
+export const auditLogs = sqliteTable(
   "audit_logs",
   {
-    id: uuid("id").defaultRandom().primaryKey(),
+    id: id(),
     actorId: text("actor_id").references(() => users.id, {
       onDelete: "set null",
     }),
@@ -584,13 +591,11 @@ export const auditLogs = pgTable(
     action: text("action").notNull(),
     entityType: text("entity_type").notNull(),
     entityId: text("entity_id").notNull(),
-    previousValues: jsonb("previous_values"),
-    newValues: jsonb("new_values"),
+    previousValues: text("previous_values", { mode: "json" }),
+    newValues: text("new_values", { mode: "json" }),
     requestId: text("request_id"),
     ipAddress: text("ip_address"),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
+    createdAt: createdAt(),
   },
   (table) => [
     index("audit_entity_idx").on(table.entityType, table.entityId),
@@ -600,9 +605,9 @@ export const auditLogs = pgTable(
   ],
 );
 
-export const systemSettings = pgTable("system_settings", {
+export const systemSettings = sqliteTable("system_settings", {
   key: text("key").primaryKey(),
-  value: jsonb("value").notNull(),
+  value: text("value", { mode: "json" }).notNull(),
   description: text("description"),
   updatedBy: text("updated_by").references(() => users.id, {
     onDelete: "set null",

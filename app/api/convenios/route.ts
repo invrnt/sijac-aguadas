@@ -27,25 +27,26 @@ export async function POST(request: Request) {
       { status: 201 },
     );
   const db = getDb();
-  const [created] = await db.transaction(async (tx) => {
-    const result = await tx
+  const id = crypto.randomUUID();
+  const [[created]] = await db.batch([
+    db
       .insert(convenios)
       .values({
         ...payload.data,
-        value: payload.data.value ? String(payload.data.value) : null,
+        id,
+        value: payload.data.value ?? null,
         createdBy: authorization.user!.id,
         updatedBy: authorization.user!.id,
       })
-      .returning();
-    await tx.insert(auditLogs).values({
+      .returning(),
+    db.insert(auditLogs).values({
       actorId: authorization.user!.id,
       actorEmail: authorization.user!.email,
       action: "create",
       entityType: "convenio",
-      entityId: result[0].id,
+      entityId: id,
       newValues: payload.data,
-    });
-    return result;
-  });
+    }),
+  ]);
   return NextResponse.json({ data: created }, { status: 201 });
 }

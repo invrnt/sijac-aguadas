@@ -9,59 +9,83 @@ usuarios, roles y auditoría.
 
 - Next.js 16, React 19 y TypeScript
 - Better Auth para cuentas, sesiones, recuperación, bloqueo y roles
-- PostgreSQL de Supabase con Drizzle ORM
-- Supabase Storage privado
+- Cloudflare D1 (SQLite) con Drizzle ORM
+- Cloudflare R2 privado para documentos
 - React Email y Resend para correos transaccionales responsive
-- Bun como gestor, runtime local y ejecutor de pruebas
-- Vercel como destino de despliegue
+- Bun como gestor de paquetes y ejecutor de scripts
+- Cloudflare Workers como destino de despliegue mediante OpenNext
 
 ## Inicio local
 
-Requisitos: Bun 1.3 o superior.
+Requisitos: Bun 1.3 o superior y Node.js 22.13 o superior (wrangler y OpenNext
+se ejecutan sobre Node).
 
 ```bash
 bun install
 copy .env.example .env.local
+bun run db:generate
+bun run db:migrate:local
+bun run db:seed
 bun run dev
 ```
 
-Con `DEMO_MODE=true` y sin `DATABASE_URL`, la aplicación ofrece acceso local
-como Administrador o Consulta y usa exclusivamente datos ficticios.
+`next dev` usa una base D1 y un bucket R2 locales guardados en `.wrangler/`.
+Con `DEMO_MODE=true` la aplicación ofrece acceso local como Administrador o
+Consulta y usa exclusivamente datos ficticios, sin tocar D1.
 
-## Conectar Supabase
+`bun run db:generate` crea la migración SQL en `drizzle/` a partir de
+`db/schema.ts`. Ejecútelo cada vez que cambie el esquema y versione el
+resultado.
 
-1. Cree un proyecto en Supabase.
-2. Copie la URL del pooler de PostgreSQL a `DATABASE_URL`.
-3. Defina `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`.
-4. Genere un secreto de 32 caracteres o más para `BETTER_AUTH_SECRET`.
-5. Ejecute:
+## Configurar Cloudflare
+
+1. Inicie sesión con `bunx wrangler login`.
+2. Cree la base de datos y copie el `database_id` devuelto en las dos entradas
+   `d1_databases` de `wrangler.jsonc`:
 
 ```bash
-bun run db:migrate
-bun run setup:storage
-bun run db:seed
+bunx wrangler d1 create sijac
 ```
 
-La clave `service_role` solo debe existir en variables del servidor. Nunca use
-la clave pública para administrar archivos privados ni exponga `service_role`
-con el prefijo `NEXT_PUBLIC_`.
+3. Cree el bucket privado de documentos:
+
+```bash
+bunx wrangler r2 bucket create sijac-private
+```
+
+4. Aplique las migraciones y cargue las cuentas iniciales en producción:
+
+```bash
+bun run db:migrate:remote
+bun run db:seed -- --remote
+```
+
+5. Registre los secretos del Worker:
+
+```bash
+bunx wrangler secret put BETTER_AUTH_SECRET
+bunx wrangler secret put RESEND_API_KEY
+```
+
+El bucket R2 no tiene acceso público: los documentos solo se entregan a través
+de la aplicación después de verificar la sesión.
 
 ## Variables
 
 | Variable | Obligatoria | Uso |
 |---|---:|---|
-| `DATABASE_URL` | Producción | URL PostgreSQL del pooler de Supabase |
 | `BETTER_AUTH_SECRET` | Producción | Firma de cookies y tokens |
 | `BETTER_AUTH_URL` | Sí | URL base de autenticación |
 | `NEXT_PUBLIC_APP_URL` | Sí | URL canónica y metadatos |
-| `SUPABASE_URL` | Producción | API del proyecto |
-| `SUPABASE_SERVICE_ROLE_KEY` | Producción | Storage privado desde servidor |
-| `SUPABASE_STORAGE_BUCKET` | No | Predeterminado: `sijac-private` |
-| `RESEND_API_KEY` | Para correo real | Recuperación e invitaciones |
 | `EMAIL_FROM` | Para correo real | Remitente autorizado |
-| `DEMO_MODE` | Solo local | Habilita la demostración sin base de datos |
+| `DEMO_MODE` | Solo local | Sustituye D1 por datos ficticios |
 | `SEED_ADMIN_EMAIL` | No | Correo de cuenta inicial |
 | `SEED_ADMIN_PASSWORD` | Producción | Contraseña inicial explícita |
+
+La base de datos (`DB`) y los documentos (`FILES`) no usan variables: son
+bindings declarados en `wrangler.jsonc`. En el Worker, las variables públicas
+se definen en `vars` de `wrangler.jsonc` o en el panel de Cloudflare, y los
+secretos con `wrangler secret put`.
 
 ## Correos transaccionales
 
@@ -76,22 +100,28 @@ bun run email:dev
 La previsualización no envía mensajes. El envío real requiere `RESEND_API_KEY`
 y un remitente verificado en `EMAIL_FROM`.
 
-## Desplegar en Vercel
+## Desplegar en Cloudflare Workers
 
-1. Publique este repositorio en su proveedor Git.
-2. Importe el repositorio en Vercel.
-3. Configure las variables anteriores para Production y Preview.
-4. Verifique que `NEXT_PUBLIC_APP_URL` y `BETTER_AUTH_URL` usen el dominio HTTPS.
-5. Despliegue. Vercel detecta Next.js y usa Bun según `vercel.json`.
-6. Ejecute las migraciones contra Supabase antes del primer acceso productivo.
-7. Cambie `DEMO_MODE` a `false`.
+1. Complete la sección «Configurar Cloudflare».
+2. Defina `NEXT_PUBLIC_APP_URL` y `BETTER_AUTH_URL` con el dominio HTTPS del
+   Worker; `NEXT_PUBLIC_APP_URL` se incorpora al compilar, así que debe estar
+   en `.env.production` o en el entorno de la compilación.
+3. Verifique que `DEMO_MODE` sea `false`.
+4. Pruebe el Worker localmente y despliegue:
+
+```bash
+bun run preview
+bun run deploy
+```
+
+Aplique `bun run db:migrate:remote` antes de desplegar cualquier versión que
+incluya migraciones nuevas.
 
 ## Calidad
 
 ```bash
 bun run lint
 bun run typecheck
-bun test
 bun run build
 ```
 

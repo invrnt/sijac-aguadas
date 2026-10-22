@@ -161,7 +161,7 @@ export async function getJuntaBundle(id: string) {
       year: item.year,
       description: item.description,
       status: item.status,
-      value: item.value ? Number(item.value) : undefined,
+      value: item.value ?? undefined,
     })),
     files: documents.map((item) => ({
       id: item.id,

@@ -43,42 +43,45 @@ export async function POST(
       { status: 201 },
     );
   const db = getDb();
-  const [created] = await db.transaction(async (tx) => {
-    const result =
-      payload.data.kind === "agenda"
-        ? await tx
-            .insert(meetingAgendaItems)
-            .values({
-              meetingId,
-              position: payload.data.position,
-              title: payload.data.title,
-              description: payload.data.description,
-            })
-            .returning()
-        : await tx
-            .insert(meetingAttendance)
-            .values({
-              meetingId,
-              fullName: payload.data.fullName,
-              documentNumber: payload.data.documentNumber,
-              roleOrRepresentation: payload.data.roleOrRepresentation,
-              status: payload.data.status,
-              registeredBy: authorization.user!.id,
-            })
-            .returning();
-    await tx.insert(auditLogs).values({
+  const id = crypto.randomUUID();
+  const insert =
+    payload.data.kind === "agenda"
+      ? db
+          .insert(meetingAgendaItems)
+          .values({
+            id,
+            meetingId,
+            position: payload.data.position,
+            title: payload.data.title,
+            description: payload.data.description,
+          })
+          .returning()
+      : db
+          .insert(meetingAttendance)
+          .values({
+            id,
+            meetingId,
+            fullName: payload.data.fullName,
+            documentNumber: payload.data.documentNumber,
+            roleOrRepresentation: payload.data.roleOrRepresentation,
+            status: payload.data.status,
+            registeredBy: authorization.user!.id,
+          })
+          .returning();
+  const [[created]] = await db.batch([
+    insert,
+    db.insert(auditLogs).values({
       actorId: authorization.user!.id,
       actorEmail: authorization.user!.email,
       action: "create",
       entityType:
         payload.data.kind === "agenda" ? "meeting_agenda_item" : "meeting_attendance",
-      entityId: result[0].id,
+      entityId: id,
       newValues:
         payload.data.kind === "attendance"
           ? { ...payload.data, documentNumber: "[REDACTED]" }
           : payload.data,
-    });
-    return result;
-  });
+    }),
+  ]);
   return NextResponse.json({ data: created }, { status: 201 });
 }

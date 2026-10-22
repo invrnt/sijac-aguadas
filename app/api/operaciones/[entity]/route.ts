@@ -145,53 +145,51 @@ export async function POST(
 
   const db = getDb();
   const actor = authorization.user;
-  const [created] = await db.transaction(async (tx) => {
-    const result =
-      entity === "reuniones"
-        ? await tx
-            .insert(meetings)
+  const id = crypto.randomUUID();
+  const ownership = { id, createdBy: actor.id, updatedBy: actor.id };
+  const insert =
+    entity === "reuniones"
+      ? db
+          .insert(meetings)
+          .values({
+            ...(parsed.data as z.infer<typeof schemas.reuniones>),
+            ...ownership,
+          })
+          .returning()
+      : entity === "actas"
+        ? db
+            .insert(minutes)
             .values({
-              ...(parsed.data as z.infer<typeof schemas.reuniones>),
-              createdBy: actor.id,
-              updatedBy: actor.id,
+              ...(parsed.data as z.infer<typeof schemas.actas>),
+              ...ownership,
             })
             .returning()
-        : entity === "actas"
-          ? await tx
-              .insert(minutes)
+        : entity === "compromisos"
+          ? db
+              .insert(commitments)
               .values({
-                ...(parsed.data as z.infer<typeof schemas.actas>),
-                createdBy: actor.id,
-                updatedBy: actor.id,
+                ...(parsed.data as z.infer<typeof schemas.compromisos>),
+                ...ownership,
               })
               .returning()
-          : entity === "compromisos"
-            ? await tx
-                .insert(commitments)
-                .values({
-                  ...(parsed.data as z.infer<typeof schemas.compromisos>),
-                  createdBy: actor.id,
-                  updatedBy: actor.id,
-                })
-                .returning()
-            : await tx
-                .insert(activities)
-                .values({
-                  ...(parsed.data as z.infer<typeof schemas.actividades>),
-                  createdBy: actor.id,
-                  updatedBy: actor.id,
-                })
-                .returning();
-    await tx.insert(auditLogs).values({
+          : db
+              .insert(activities)
+              .values({
+                ...(parsed.data as z.infer<typeof schemas.actividades>),
+                ...ownership,
+              })
+              .returning();
+  const [[created]] = await db.batch([
+    insert,
+    db.insert(auditLogs).values({
       actorId: actor.id,
       actorEmail: actor.email,
       action: "create",
       entityType: entity,
-      entityId: result[0].id,
+      entityId: id,
       newValues: parsed.data,
-    });
-    return result;
-  });
+    }),
+  ]);
   return NextResponse.json({ data: created }, { status: 201 });
 }
 
@@ -250,13 +248,13 @@ export async function PATCH(
           ? commitments
           : activities;
 
-  const result = await db.transaction(async (tx) => {
-    const [updated] = await tx
+  const [[result]] = await db.batch([
+    db
       .update(table)
       .set({ status: payload.data.to as never, updatedBy: authorization.user!.id })
       .where(eq(table.id, payload.data.id))
-      .returning();
-    await tx.insert(auditLogs).values({
+      .returning(),
+    db.insert(auditLogs).values({
       actorId: authorization.user!.id,
       actorEmail: authorization.user!.email,
       action: "status_change",
@@ -264,8 +262,7 @@ export async function PATCH(
       entityId: payload.data.id,
       previousValues: { status: payload.data.from },
       newValues: { status: payload.data.to, reason: payload.data.reason },
-    });
-    return updated;
-  });
+    }),
+  ]);
   return NextResponse.json({ data: result });
 }

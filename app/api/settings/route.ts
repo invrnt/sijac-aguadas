@@ -28,32 +28,25 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ data: payload.data, demo: true });
 
   const db = getDb();
-  await db.transaction(async (tx) => {
-    for (const [key, value] of Object.entries(payload.data)) {
-      await tx
-        .insert(systemSettings)
-        .values({
-          key,
-          value,
-          updatedBy: authorization.user!.id,
-        })
-        .onConflictDoUpdate({
-          target: systemSettings.key,
-          set: {
-            value,
-            updatedBy: authorization.user!.id,
-            updatedAt: new Date(),
-          },
-        });
-    }
-    await tx.insert(auditLogs).values({
-      actorId: authorization.user!.id,
+  const actorId = authorization.user!.id;
+  await db.batch([
+    db.insert(auditLogs).values({
+      actorId,
       actorEmail: authorization.user!.email,
       action: "update",
       entityType: "settings",
       entityId: "system",
       newValues: payload.data,
-    });
-  });
+    }),
+    ...Object.entries(payload.data).map(([key, value]) =>
+      db
+        .insert(systemSettings)
+        .values({ key, value, updatedBy: actorId })
+        .onConflictDoUpdate({
+          target: systemSettings.key,
+          set: { value, updatedBy: actorId, updatedAt: new Date() },
+        }),
+    ),
+  ]);
   return NextResponse.json({ data: payload.data });
 }

@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
-import { auth } from "@/lib/auth";
-import { getDb } from "@/db";
+import { createAuth } from "@/lib/auth";
 import { juntas, users } from "@/db/schema";
+import { openScriptDb } from "./d1";
 
 const adminEmail = process.env.SEED_ADMIN_EMAIL ?? "admin@sijac.local";
 const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? "Cambiar-Antes-De-Produccion-2026!";
@@ -9,11 +9,17 @@ const consultaEmail = process.env.SEED_CONSULTA_EMAIL ?? "consulta@sijac.local";
 const consultaPassword =
   process.env.SEED_CONSULTA_PASSWORD ?? "Cambiar-Antes-De-Produccion-2026!";
 
-if (process.env.NODE_ENV === "production" && !process.env.SEED_ADMIN_PASSWORD) {
+const targetsProduction =
+  process.env.NODE_ENV === "production" || process.argv.includes("--remote");
+
+if (targetsProduction && !process.env.SEED_ADMIN_PASSWORD) {
   throw new Error(
     "En producción debe definir SEED_ADMIN_PASSWORD explícitamente.",
   );
 }
+
+const { db, dispose } = await openScriptDb();
+const auth = createAuth(db);
 
 async function ensureUser({
   email,
@@ -28,7 +34,6 @@ async function ensureUser({
   role: "admin" | "user";
   username: string;
 }) {
-  const db = getDb();
   const [existing] = await db.select().from(users).where(eq(users.email, email)).limit(1);
   if (existing) return existing;
   const created = await auth.api.createUser({
@@ -79,36 +84,40 @@ async function main() {
     username: "consulta",
   });
 
-  const db = getDb();
   const existingJuntas = await db.select({ id: juntas.id }).from(juntas).limit(1);
   if (!existingJuntas.length) {
-    await db.insert(juntas).values(
-      Array.from({ length: 68 }, (_, index) => {
-        const number = index + 1;
-        const place = places[index % places.length];
-        return {
-          code: `DEV-${String(number).padStart(3, "0")}`,
-          officialName: `FICHA DEMOSTRATIVA ${String(number).padStart(2, "0")} - ${place}`,
-          neighborhood: place,
-          sourceNeighborhood: place,
-          zone: index % 4 === 0 ? ("urbana" as const) : ("rural" as const),
-          affiliatesCount: 0,
-          status: "activa" as const,
-          pendingFields: [
-            "nit",
-            "legalEntityNumber",
-            "resolutionNumber",
-            "contact",
-          ],
-          createdBy: adminUser.id,
-          updatedBy: adminUser.id,
-        };
-      }),
-    );
+    // D1 limita cada consulta a 100 parámetros: una inserción por ficha.
+    const rows = Array.from({ length: 68 }, (_, index) => {
+      const number = index + 1;
+      const place = places[index % places.length];
+      return {
+        code: `DEV-${String(number).padStart(3, "0")}`,
+        officialName: `FICHA DEMOSTRATIVA ${String(number).padStart(2, "0")} - ${place}`,
+        neighborhood: place,
+        sourceNeighborhood: place,
+        zone: index % 4 === 0 ? ("urbana" as const) : ("rural" as const),
+        affiliatesCount: 0,
+        status: "activa" as const,
+        pendingFields: [
+          "nit",
+          "legalEntityNumber",
+          "resolutionNumber",
+          "contact",
+        ],
+        createdBy: adminUser.id,
+        updatedBy: adminUser.id,
+      };
+    });
+    const [first, ...rest] = rows.map((row) => db.insert(juntas).values(row));
+    await db.batch([first, ...rest]);
   }
   console.info(
     "Semilla aplicada: dos cuentas de desarrollo y 68 fichas ficticias.",
   );
 }
 
-await main();
+try {
+  await main();
+} finally {
+  await dispose();
+}

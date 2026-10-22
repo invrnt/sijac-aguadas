@@ -116,7 +116,7 @@ export function LoginForm({ demoEnabled }: { demoEnabled: boolean }) {
           </div>
           <p>
             Pruebe la aplicación con información ficticia. Ningún dato se
-            guardará en Supabase.
+            guardará en la base de datos.
           </p>
           <div className="demo-buttons">
             <button

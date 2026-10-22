@@ -34,26 +34,27 @@ export async function POST(request: Request) {
       { status: 201 },
     );
   const db = getDb();
-  const [created] = await db.transaction(async (tx) => {
-    const result = await tx
+  const id = crypto.randomUUID();
+  const [[created]] = await db.batch([
+    db
       .insert(dignatarios)
       .values({
         ...payload.data,
+        id,
         termStart: payload.data.termStart || null,
         termEnd: payload.data.termEnd || null,
         createdBy: authorization.user!.id,
         updatedBy: authorization.user!.id,
       })
-      .returning();
-    await tx.insert(auditLogs).values({
+      .returning(),
+    db.insert(auditLogs).values({
       actorId: authorization.user!.id,
       actorEmail: authorization.user!.email,
       action: "create",
       entityType: "dignatario",
-      entityId: result[0].id,
+      entityId: id,
       newValues: { ...payload.data, documentNumber: "[REDACTED]" },
-    });
-    return result;
-  });
+    }),
+  ]);
   return NextResponse.json({ data: created }, { status: 201 });
 }

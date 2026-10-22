@@ -3,10 +3,10 @@ import { NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { auditLogs, files } from "@/db/schema";
 import { authorizeApi } from "@/lib/api-auth";
-import { env, hasDatabase } from "@/lib/env";
+import { hasDatabase } from "@/lib/env";
 import {
   allowedFileTypes,
-  getStorageAdmin,
+  getFileBucket,
   maxFileSize,
   safeFileName,
 } from "@/lib/storage";
@@ -61,14 +61,13 @@ export async function POST(request: Request) {
   const checksum = createHash("sha256").update(bytes).digest("hex");
   const id = crypto.randomUUID();
   const storagePath = `${juntaId}/${id}-${safeFileName(file.name)}`;
-  const storage = getStorageAdmin();
-  const upload = await storage.storage
-    .from(env.SUPABASE_STORAGE_BUCKET)
-    .upload(storagePath, bytes, {
-      contentType: file.type,
-      upsert: false,
+  const bucket = getFileBucket();
+  try {
+    await bucket.put(storagePath, bytes, {
+      httpMetadata: { contentType: file.type },
+      sha256: checksum,
     });
-  if (upload.error) {
+  } catch {
     return NextResponse.json(
       { error: "No fue posible almacenar el archivo." },
       { status: 502 },
@@ -77,8 +76,8 @@ export async function POST(request: Request) {
 
   const db = getDb();
   try {
-    const [created] = await db.transaction(async (tx) => {
-      const inserted = await tx
+    const [[created]] = await db.batch([
+      db
         .insert(files)
         .values({
           id,
@@ -92,8 +91,8 @@ export async function POST(request: Request) {
           description,
           uploadedBy: authorization.user!.id,
         })
-        .returning();
-      await tx.insert(auditLogs).values({
+        .returning(),
+      db.insert(auditLogs).values({
         actorId: authorization.user!.id,
         actorEmail: authorization.user!.email,
         action: "upload",
@@ -106,14 +105,11 @@ export async function POST(request: Request) {
           sizeBytes: file.size,
           checksum,
         },
-      });
-      return inserted;
-    });
+      }),
+    ]);
     return NextResponse.json({ data: created }, { status: 201 });
   } catch {
-    await storage.storage
-      .from(env.SUPABASE_STORAGE_BUCKET)
-      .remove([storagePath]);
+    await bucket.delete(storagePath);
     return NextResponse.json(
       { error: "No fue posible registrar el archivo." },
       { status: 500 },

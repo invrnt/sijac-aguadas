@@ -16,7 +16,7 @@ Este documento describe, desde la perspectiva de sus usuarios, las funcionalidad
 | Visitante | Consulta la presentación y política de privacidad, inicia sesión y solicita recuperación de acceso. |
 | Usuario Consulta | Accede a información institucional, fichas de JAC, reuniones, actas, compromisos, actividades y reportes; puede imprimir o exportar cuando la pantalla lo permite. |
 | Administrador | Incluye todas las capacidades de Consulta y además crea, actualiza, archiva y administra información, documentos, usuarios y configuración. |
-| Servicios externos | Supabase conserva datos y archivos privados; Resend entrega invitaciones y recuperaciones; Vercel aloja la aplicación. |
+| Servicios externos | Cloudflare D1 conserva los datos y R2 los archivos privados; Resend entrega invitaciones y recuperaciones; Cloudflare Workers aloja la aplicación. |
 
 ## 3. Reglas generales
 
@@ -164,14 +164,14 @@ Este documento describe, desde la perspectiva de sus usuarios, las funcionalidad
 
 **Actor:** Administrador para cargar; usuarios autorizados para descargar.  
 **Objetivo:** Conservar soportes institucionales de forma privada.  
-**Precondiciones:** La JAC existe y Supabase Storage está disponible.  
+**Precondiciones:** La JAC existe y el almacenamiento R2 está disponible.  
 **Flujo principal:**
 
 1. El administrador selecciona un archivo permitido.
 2. El sistema valida formato, nombre y límite de 10 MB.
 3. El archivo se almacena en un bucket privado y se registra su metadato.
 4. Un usuario autorizado solicita la descarga.
-5. El sistema genera un enlace firmado temporal.
+5. El sistema verifica la sesión y entrega el archivo directamente.
 
 **Resultado:** El documento se conserva sin exposición pública directa.
 
@@ -353,6 +353,6 @@ Este documento describe, desde la perspectiva de sus usuarios, las funcionalidad
 
 - Los datos iniciales de 68 JAC son ficticios y deben sustituirse mediante el importador antes del uso institucional.
 - El envío real de correos depende de un dominio remitente verificado en Resend.
-- La base de datos debe utilizar Supavisor para entornos IPv4 y el Transaction pooler en Vercel.
+- La base de datos D1 y el bucket R2 se enlazan al Worker en `wrangler.jsonc`; las migraciones se aplican con wrangler antes de cada despliegue.
 - Las variables secretas nunca deben publicarse ni usar el prefijo `NEXT_PUBLIC_`.
 - El modo demostración debe permanecer desactivado en producción.

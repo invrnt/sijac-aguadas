@@ -29,8 +29,10 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     };
   }
 
-  const { auth } = await import("@/lib/auth");
-  const session = await auth.api.getSession({ headers: await headers() });
+  const { createAuth } = await import("@/lib/auth");
+  const session = await createAuth().api.getSession({
+    headers: await headers(),
+  });
   if (!session) return null;
 
   return {

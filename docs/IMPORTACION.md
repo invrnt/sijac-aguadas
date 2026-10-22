@@ -19,7 +19,7 @@ bun run import:juntas -- ./datos/juntas.csv
 Después de corregir duplicados, fechas y valores ambiguos:
 
 ```bash
-bun run import:juntas -- ./datos/juntas.csv --confirm
+bun run import:juntas -- ./datos/juntas.csv --confirm --remote
 ```
 
 La fuente original debe conservarse inalterada y con acceso restringido. Los

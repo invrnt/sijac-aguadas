@@ -3,8 +3,8 @@ import { NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { files } from "@/db/schema";
 import { authorizeApi } from "@/lib/api-auth";
-import { env, hasDatabase } from "@/lib/env";
-import { getStorageAdmin } from "@/lib/storage";
+import { hasDatabase } from "@/lib/env";
+import { getFileBucket } from "@/lib/storage";
 
 export async function GET(
   _request: Request,
@@ -28,16 +28,22 @@ export async function GET(
       { status: 404 },
     );
   }
-  const { data, error } = await getStorageAdmin().storage
-    .from(env.SUPABASE_STORAGE_BUCKET)
-    .createSignedUrl(record.storagePath, 60, {
-      download: record.originalName,
-    });
-  if (error || !data?.signedUrl) {
+
+  // El bucket R2 es privado: el archivo se entrega desde el Worker tras
+  // verificar la sesión, en lugar de exponer una URL firmada.
+  const object = await getFileBucket().get(record.storagePath);
+  if (!object) {
     return NextResponse.json(
-      { error: "No fue posible autorizar la descarga." },
+      { error: "No fue posible recuperar el archivo." },
       { status: 502 },
     );
   }
-  return NextResponse.redirect(data.signedUrl, 307);
+  return new NextResponse(object.body as unknown as ReadableStream, {
+    headers: {
+      "Content-Type": record.mimeType,
+      "Content-Length": String(object.size),
+      "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(record.originalName)}`,
+      "Cache-Control": "private, no-store",
+    },
+  });
 }

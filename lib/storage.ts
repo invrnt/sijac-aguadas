@@ -1,18 +1,7 @@
-import { createClient } from "@supabase/supabase-js";
-import { env } from "@/lib/env";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 
-let client: ReturnType<typeof createClient> | null = null;
-
-export function getStorageAdmin() {
-  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
-    throw new Error("Supabase Storage no está configurado.");
-  }
-  if (!client) {
-    client = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-  }
-  return client;
+export function getFileBucket() {
+  return getCloudflareContext().env.FILES;
 }
 
 export const allowedFileTypes = new Set([
@@ -29,7 +18,7 @@ export const maxFileSize = 10 * 1024 * 1024;
 export function safeFileName(value: string) {
   return value
     .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[̀-ͯ]/g, "")
     .replace(/[^a-zA-Z0-9._-]+/g, "-")
     .replace(/-+/g, "-")
     .slice(0, 120);

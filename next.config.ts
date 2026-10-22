@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
@@ -34,3 +35,6 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
+// Expone D1 y R2 locales (`.wrangler/`) a `next dev`.
+initOpenNextCloudflareForDev();

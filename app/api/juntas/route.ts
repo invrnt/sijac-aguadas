@@ -1,4 +1,4 @@
-import { and, eq, ilike, ne, or } from "drizzle-orm";
+import { and, eq, like, ne, or } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { auditLogs, juntas } from "@/db/schema";
@@ -44,13 +44,14 @@ export async function GET(request: Request) {
   const db = getDb();
   const conditions = [];
   if (query) {
+    // LIKE en SQLite ya ignora mayúsculas y minúsculas en caracteres ASCII.
     conditions.push(
       or(
-        ilike(juntas.code, `%${query}%`),
-        ilike(juntas.officialName, `%${query}%`),
-        ilike(juntas.neighborhood, `%${query}%`),
-        ilike(juntas.nit, `%${query}%`),
-        ilike(juntas.legalEntityNumber, `%${query}%`),
+        like(juntas.code, `%${query}%`),
+        like(juntas.officialName, `%${query}%`),
+        like(juntas.neighborhood, `%${query}%`),
+        like(juntas.nit, `%${query}%`),
+        like(juntas.legalEntityNumber, `%${query}%`),
       ),
     );
   }
@@ -100,25 +101,26 @@ export async function POST(request: Request) {
 
   const db = getDb();
   try {
-    const [created] = await db.transaction(async (tx) => {
-      const inserted = await tx
+    const id = crypto.randomUUID();
+    const [[created]] = await db.batch([
+      db
         .insert(juntas)
         .values({
           ...payload.data,
+          id,
           createdBy: authorization.user!.id,
           updatedBy: authorization.user!.id,
         })
-        .returning();
-      await tx.insert(auditLogs).values({
+        .returning(),
+      db.insert(auditLogs).values({
         actorId: authorization.user!.id,
         actorEmail: authorization.user!.email,
         action: "create",
         entityType: "junta",
-        entityId: inserted[0].id,
+        entityId: id,
         newValues: payload.data,
-      });
-      return inserted;
-    });
+      }),
+    ]);
     return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {
     const duplicate =

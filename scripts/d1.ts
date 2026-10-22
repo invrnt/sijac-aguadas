@@ -1,0 +1,12 @@
+import { getPlatformProxy } from "wrangler";
+import { getDb } from "@/db";
+
+// Fuera del Worker, wrangler expone el binding D1: la base local de
+// `.wrangler/` por defecto, o la de producción con `--remote`.
+export async function openScriptDb() {
+  const remote = process.argv.includes("--remote");
+  const proxy = await getPlatformProxy<CloudflareEnv>({
+    environment: remote ? "remote" : undefined,
+  });
+  return { db: getDb(proxy.env.DB), dispose: proxy.dispose };
+}

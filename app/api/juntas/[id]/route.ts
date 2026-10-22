@@ -88,13 +88,13 @@ export async function PATCH(
   if (!previous)
     return NextResponse.json({ error: "JAC no encontrada." }, { status: 404 });
 
-  const [updated] = await db.transaction(async (tx) => {
-    const result = await tx
+  const [[updated]] = await db.batch([
+    db
       .update(juntas)
       .set({ ...payload.data, updatedBy: authorization.user!.id })
       .where(eq(juntas.id, id))
-      .returning();
-    await tx.insert(auditLogs).values({
+      .returning(),
+    db.insert(auditLogs).values({
       actorId: authorization.user!.id,
       actorEmail: authorization.user!.email,
       action: "update",
@@ -102,9 +102,8 @@ export async function PATCH(
       entityId: id,
       previousValues: previous,
       newValues: payload.data,
-    });
-    return result;
-  });
+    }),
+  ]);
   return NextResponse.json({ data: updated });
 }
 
@@ -123,8 +122,8 @@ export async function DELETE(
   const [previous] = await db.select().from(juntas).where(eq(juntas.id, id)).limit(1);
   if (!previous)
     return NextResponse.json({ error: "JAC no encontrada." }, { status: 404 });
-  const [updated] = await db.transaction(async (tx) => {
-    const result = await tx
+  const [[updated]] = await db.batch([
+    db
       .update(juntas)
       .set({
         previousStatus: previous.status,
@@ -133,8 +132,8 @@ export async function DELETE(
         updatedBy: authorization.user!.id,
       })
       .where(eq(juntas.id, id))
-      .returning();
-    await tx.insert(auditLogs).values({
+      .returning(),
+    db.insert(auditLogs).values({
       actorId: authorization.user!.id,
       actorEmail: authorization.user!.email,
       action: "archive",
@@ -142,8 +141,7 @@ export async function DELETE(
       entityId: id,
       previousValues: { status: previous.status },
       newValues: { status: "archivada" },
-    });
-    return result;
-  });
+    }),
+  ]);
   return NextResponse.json({ data: updated });
 }

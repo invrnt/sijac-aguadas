@@ -1,27 +1,12 @@
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
-import { env, hasDatabase } from "@/lib/env";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { drizzle } from "drizzle-orm/d1";
+import type { D1Database } from "@cloudflare/workers-types";
 import * as schema from "./schema";
 
-let client: ReturnType<typeof postgres> | undefined;
-let database: ReturnType<typeof drizzle<typeof schema>> | undefined;
-
-export function getDb() {
-  if (!client) {
-    const connectionString =
-      env.DATABASE_URL ??
-      "postgresql://postgres:postgres@127.0.0.1:5432/sijac";
-    client = postgres(connectionString, {
-      max: 5,
-      idle_timeout: 20,
-      connect_timeout: 10,
-      prepare: false,
-      ssl: hasDatabase ? "require" : false,
-    });
-    database = drizzle(client, { schema });
-  }
-
-  return database!;
+// La conexión D1 llega como binding del Worker en cada solicitud. Los scripts
+// fuera de Workers (semilla, importación) pasan su propio binding.
+export function getDb(binding?: D1Database) {
+  return drizzle(binding ?? getCloudflareContext().env.DB, { schema });
 }
 
 export type Database = ReturnType<typeof getDb>;

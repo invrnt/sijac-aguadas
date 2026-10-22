@@ -35,35 +35,38 @@ export async function POST(
       { status: 201 },
     );
   const db = getDb();
-  const [created] = await db.transaction(async (tx) => {
-    const result =
-      payload.data.kind === "section"
-        ? await tx
-            .insert(minuteSections)
-            .values({
-              minuteId,
-              position: payload.data.position,
-              heading: payload.data.heading,
-              content: payload.data.content,
-            })
-            .returning()
-        : await tx
-            .insert(decisions)
-            .values({
-              minuteId,
-              description: payload.data.description,
-              result: payload.data.result,
-            })
-            .returning();
-    await tx.insert(auditLogs).values({
+  const id = crypto.randomUUID();
+  const insert =
+    payload.data.kind === "section"
+      ? db
+          .insert(minuteSections)
+          .values({
+            id,
+            minuteId,
+            position: payload.data.position,
+            heading: payload.data.heading,
+            content: payload.data.content,
+          })
+          .returning()
+      : db
+          .insert(decisions)
+          .values({
+            id,
+            minuteId,
+            description: payload.data.description,
+            result: payload.data.result,
+          })
+          .returning();
+  const [[created]] = await db.batch([
+    insert,
+    db.insert(auditLogs).values({
       actorId: authorization.user!.id,
       actorEmail: authorization.user!.email,
       action: "create",
       entityType: payload.data.kind === "section" ? "minute_section" : "decision",
-      entityId: result[0].id,
+      entityId: id,
       newValues: payload.data,
-    });
-    return result;
-  });
+    }),
+  ]);
   return NextResponse.json({ data: created }, { status: 201 });
 }
