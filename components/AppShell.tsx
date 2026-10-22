@@ -11,6 +11,7 @@ import {
   History,
   House,
   Landmark,
+  LifeBuoy,
   LogOut,
   Menu,
   Search,
@@ -45,6 +46,8 @@ const admin: NavItem[] = [
   { href: "/administracion/auditoria", label: "Auditoría", icon: History, admin: true },
   { href: "/administracion/configuracion", label: "Configuración", icon: Settings, admin: true },
 ];
+
+const help: NavItem[] = [{ href: "/manual", label: "Manual", icon: LifeBuoy }];
 
 const mobile: NavItem[] = [
   primary[0],
@@ -94,6 +97,19 @@ export function AppShell({
         <p className="nav-label">Gestión</p>
         <nav className="main-nav">
           {primary.map((item) => (
+            <Link
+              key={item.href}
+              className={`nav-item ${active(item.href) ? "nav-item-active" : ""}`}
+              href={item.href}
+            >
+              <item.icon size={18} strokeWidth={1.9} aria-hidden="true" />
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+        <p className="nav-label">Ayuda</p>
+        <nav className="main-nav">
+          {help.map((item) => (
             <Link
               key={item.href}
               className={`nav-item ${active(item.href) ? "nav-item-active" : ""}`}

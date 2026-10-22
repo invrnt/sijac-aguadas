@@ -4,6 +4,7 @@ import {
   BookOpenText,
   FileBarChart,
   History,
+  LifeBuoy,
   Settings,
   Users,
 } from "lucide-react";
@@ -18,6 +19,7 @@ export default async function MorePage() {
     { href: "/actas", label: "Actas", icon: BookOpenText },
     { href: "/actividades", label: "Actividades", icon: Activity },
     { href: "/reportes", label: "Reportes", icon: FileBarChart },
+    { href: "/manual", label: "Manual", icon: LifeBuoy },
     ...(user.role === "admin"
       ? [
           { href: "/administracion/usuarios", label: "Usuarios", icon: Users },
