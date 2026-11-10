@@ -13,13 +13,13 @@
     "build": "next build",
     "start": "next start",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "deploy": "wrangler d1 migrations apply DB --remote && opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "check": "bun run lint && bun run typecheck && bun run build",
     "lint": "eslint . --ignore-pattern .next --ignore-pattern .open-next --ignore-pattern .wrangler",
     "typecheck": "tsc --noEmit",
     "db:generate": "bunx drizzle-kit generate",
-    "db:migrate:local": "wrangler d1 migrations apply sijac --local",
-    "db:migrate:remote": "wrangler d1 migrations apply sijac --remote",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
     "db:seed": "tsx scripts/seed.ts",
     "import:juntas": "tsx scripts/import-juntas.ts",
     "email:dev": "bunx email dev --dir emails"
@@ -56,5 +56,18 @@
   "overrides": {
     "esbuild": "0.25.12",
     "postcss": "8.5.24"
+  },
+  "cloudflare": {
+    "bindings": {
+      "SETUP_CODE": {
+        "description": "Invente una **clave de instalación** de al menos 8 caracteres y guárdela. Al terminar el despliegue, abra la dirección de la aplicación: el asistente de configuración se la pedirá una sola vez para crear la cuenta del administrador."
+      },
+      "RESEND_API_KEY": {
+        "description": "Clave para enviar correos (invitaciones y recuperación de contraseña). Cree una cuenta gratuita en [Resend](https://resend.com), vaya a [API Keys](https://resend.com/api-keys), pulse **Create API Key** y pegue aquí la clave (empieza por `re_`). Si aún no la tiene, deje `pendiente`: el asistente le explicará cómo agregarla después."
+      },
+      "EMAIL_FROM": {
+        "description": "Remitente de los correos, con un dominio verificado en [Resend → Domains](https://resend.com/domains). Ejemplo: `SIJAC Aguadas <no-responder@aguadas-caldas.gov.co>`. Puede dejar el valor de ejemplo y cambiarlo después."
+      }
+    }
   }
 }

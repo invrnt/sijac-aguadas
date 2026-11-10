@@ -4,9 +4,15 @@ const schema = z.object({
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),
-  NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
-  BETTER_AUTH_URL: z.string().url().default("http://localhost:3000"),
+  // Opcionales: sin ellas, la URL se toma del dominio de cada solicitud, así
+  // el mismo código funciona en *.workers.dev y en un dominio propio.
+  NEXT_PUBLIC_APP_URL: z.string().url().optional(),
+  BETTER_AUTH_URL: z.string().url().optional(),
+  // Opcional: sin él, se genera uno y se guarda en D1 (lib/auth-secret.ts).
   BETTER_AUTH_SECRET: z.string().min(32).optional(),
+  // Clave que pide el asistente de configuración inicial para crear la
+  // primera cuenta de administrador.
+  SETUP_CODE: z.string().optional(),
   DEMO_MODE: z.enum(["true", "false"]).default("false"),
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().default("SIJAC Aguadas <no-reply@example.gov.co>"),
@@ -22,16 +28,11 @@ export const demoEnabled =
 // datos ficticios.
 export const hasDatabase = !demoEnabled;
 
-export function assertProductionEnv() {
-  if (env.NODE_ENV !== "production") return;
+// Las claves de Resend empiezan por «re_». El formulario de despliegue exige
+// un valor, así que «pendiente» u otro texto cuenta como no configurado.
+export const emailConfigured = Boolean(env.RESEND_API_KEY?.startsWith("re_"));
+export const emailSenderConfigured = !env.EMAIL_FROM.includes("example.gov.co");
 
-  const missing = [
-    !env.BETTER_AUTH_SECRET && "BETTER_AUTH_SECRET",
-  ].filter(Boolean);
-
-  if (missing.length) {
-    throw new Error(
-      `Faltan variables obligatorias de producción: ${missing.join(", ")}`,
-    );
-  }
-}
+export const SETUP_CODE_MIN_LENGTH = 8;
+export const setupCodeConfigured =
+  (env.SETUP_CODE?.trim().length ?? 0) >= SETUP_CODE_MIN_LENGTH;

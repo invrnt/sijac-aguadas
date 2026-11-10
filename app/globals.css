@@ -2295,3 +2295,151 @@ textarea:focus {
     display: block;
   }
 }
+
+/* Asistente de configuración inicial */
+.setup-card {
+  width: min(100%, 620px);
+}
+
+.setup-card > p {
+  color: var(--muted);
+}
+
+.setup-steps {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 24px;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 720;
+}
+
+.setup-steps li {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 7px;
+  border-bottom: 3px solid var(--line);
+  padding-bottom: 8px;
+}
+
+.setup-steps li span {
+  display: inline-grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--green-50);
+  font-size: 0.72rem;
+}
+
+.setup-steps li.is-current {
+  border-color: var(--green-800);
+  color: var(--green-900);
+}
+
+.setup-steps li.is-current span {
+  background: var(--green-900);
+  color: var(--white);
+}
+
+.setup-checks {
+  display: grid;
+  gap: 10px;
+  margin: 22px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.setup-checks > li {
+  border: 1px solid var(--line);
+  border-left-width: 4px;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.setup-checks > li.is-ok {
+  border-left-color: var(--green-700);
+}
+
+.setup-checks > li.is-error {
+  border-left-color: var(--red);
+  background: #fffafa;
+}
+
+.setup-checks > li.is-warning {
+  border-left-color: var(--amber);
+}
+
+.setup-check-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.is-ok .setup-check-head svg {
+  color: var(--green-700);
+}
+
+.is-error .setup-check-head svg {
+  color: var(--red);
+}
+
+.is-warning .setup-check-head svg {
+  color: var(--amber);
+}
+
+.setup-checks p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.setup-checks details {
+  margin-top: 8px;
+  font-size: 0.86rem;
+}
+
+.setup-checks summary {
+  cursor: pointer;
+  color: var(--green-800);
+  font-weight: 720;
+}
+
+.setup-checks details ol,
+.setup-next {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+.setup-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.setup-subtitle {
+  margin: 24px 0 4px;
+  font-size: 1.05rem;
+}
+
+.setup-next {
+  margin-bottom: 24px;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 480px) {
+  .setup-steps {
+    font-size: 0.72rem;
+  }
+
+  .setup-steps li {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

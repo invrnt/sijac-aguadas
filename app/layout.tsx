@@ -1,11 +1,18 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import Script from "next/script";
+import { appOrigin } from "@/lib/origin";
 import "./globals.css";
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+// Sin NEXT_PUBLIC_APP_URL fija, las URL absolutas (Open Graph) usan el dominio
+// de la solicitud, para que una instalación nueva funcione sin configurarla.
+export async function generateMetadata(): Promise<Metadata> {
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL ?? appOrigin(await headers());
+  return { ...metadata, metadataBase: new URL(appUrl) };
+}
 
-export const metadata: Metadata = {
-  metadataBase: new URL(appUrl),
+const metadata: Metadata = {
   title: {
     default: "SIJAC Aguadas",
     template: "%s · SIJAC Aguadas",

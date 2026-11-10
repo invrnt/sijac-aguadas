@@ -5,6 +5,34 @@ de Aguadas, Caldas. Incluye fichas institucionales, dignatarios, convenios,
 documentos privados, reuniones, actas, compromisos, actividades, reportes,
 usuarios, roles y auditoría.
 
+## Instalación con un clic
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/invrnt/sijac-aguadas)
+
+Pensado para quien no es técnico. No hay que instalar nada en el equipo:
+
+1. Pulse el botón e inicie sesión en Cloudflare (o cree una cuenta gratuita)
+   y conecte su cuenta de GitHub.
+2. Cloudflare crea solo la base de datos D1, el bucket privado R2, una copia
+   del repositorio en su GitHub y la compilación automática.
+3. Complete los tres secretos que pide el formulario; cada uno trae su
+   explicación:
+   - `SETUP_CODE`: una clave de instalación que usted inventa (mínimo 8
+     caracteres).
+   - `RESEND_API_KEY`: la clave de [Resend](https://resend.com/api-keys) para
+     enviar correos. Puede dejar `pendiente` y agregarla después.
+   - `EMAIL_FROM`: el remitente de los correos.
+4. Deje el nombre del proyecto como `sijac-aguadas` y pulse **Create and
+   deploy**. El despliegue crea también las tablas de la base de datos.
+5. Abra la dirección `https://sijac-aguadas.<su-subdominio>.workers.dev`. La
+   aplicación lo lleva al asistente `/configuracion-inicial`, que revisa la
+   instalación, le indica en el panel de Cloudflare cómo corregir lo que falte
+   y crea la cuenta del administrador con la clave de instalación.
+
+Cada cambio que se suba a la copia del repositorio se vuelve a desplegar solo.
+La clave de sesiones (`BETTER_AUTH_SECRET`) es opcional: si no se registra,
+la aplicación genera una y la guarda en D1.
+
 ## Stack
 
 - Next.js 16, React 19 y TypeScript
@@ -22,7 +50,7 @@ se ejecutan sobre Node).
 
 ```bash
 bun install
-copy .env.example .env.local
+copy .env.local.example .env.local
 bun run db:generate
 bun run db:migrate:local
 bun run db:seed
@@ -40,8 +68,9 @@ resultado.
 ## Configurar Cloudflare
 
 1. Inicie sesión con `bunx wrangler login`.
-2. Cree la base de datos y copie el `database_id` devuelto en las dos entradas
-   `d1_databases` de `wrangler.jsonc`:
+2. Cree la base de datos y copie el `database_id` devuelto en
+   `wrangler.jsonc` y en `wrangler.remote.jsonc` (este último solo lo usan los
+   scripts locales con `--remote`):
 
 ```bash
 bunx wrangler d1 create sijac
@@ -53,19 +82,19 @@ bunx wrangler d1 create sijac
 bunx wrangler r2 bucket create sijac-private
 ```
 
-4. Aplique las migraciones y cargue las cuentas iniciales en producción:
+4. Registre los secretos del Worker:
 
 ```bash
-bun run db:migrate:remote
-bun run db:seed -- --remote
-```
-
-5. Registre los secretos del Worker:
-
-```bash
-bunx wrangler secret put BETTER_AUTH_SECRET
+bunx wrangler secret put SETUP_CODE
 bunx wrangler secret put RESEND_API_KEY
+bunx wrangler secret put EMAIL_FROM
+# Opcional: si no existe, se genera y se guarda en D1.
+bunx wrangler secret put BETTER_AUTH_SECRET
 ```
+
+5. Despliegue (ver abajo) y abra `/configuracion-inicial` para crear el
+   administrador. Como alternativa técnica, `bun run db:seed -- --remote`
+   (con `SEED_ADMIN_PASSWORD`) crea cuentas y fichas de demostración.
 
 El bucket R2 no tiene acceso público: los documentos solo se entregan a través
 de la aplicación después de verificar la sesión.
@@ -74,9 +103,11 @@ de la aplicación después de verificar la sesión.
 
 | Variable | Obligatoria | Uso |
 |---|---:|---|
-| `BETTER_AUTH_SECRET` | Producción | Firma de cookies y tokens |
-| `BETTER_AUTH_URL` | Sí | URL base de autenticación |
-| `NEXT_PUBLIC_APP_URL` | Sí | URL canónica y metadatos |
+| `SETUP_CODE` | Para el asistente | Clave para crear el primer administrador |
+| `BETTER_AUTH_SECRET` | No | Firma de cookies y tokens; sin ella se genera en D1 |
+| `BETTER_AUTH_URL` | No | URL base fija; sin ella se usa el dominio de la solicitud |
+| `NEXT_PUBLIC_APP_URL` | No | URL canónica fija para metadatos |
+| `RESEND_API_KEY` | Para correo real | Clave de Resend (empieza por `re_`) |
 | `EMAIL_FROM` | Para correo real | Remitente autorizado |
 | `DEMO_MODE` | Solo local | Sustituye D1 por datos ficticios |
 | `SEED_ADMIN_EMAIL` | No | Correo de cuenta inicial |
@@ -103,19 +134,20 @@ y un remitente verificado en `EMAIL_FROM`.
 ## Desplegar en Cloudflare Workers
 
 1. Complete la sección «Configurar Cloudflare».
-2. Defina `NEXT_PUBLIC_APP_URL` y `BETTER_AUTH_URL` con el dominio HTTPS del
-   Worker; `NEXT_PUBLIC_APP_URL` se incorpora al compilar, así que debe estar
-   en `.env.production` o en el entorno de la compilación.
+2. Las URL no hacen falta: la aplicación usa el dominio de cada solicitud.
+   Defina `BETTER_AUTH_URL` o `NEXT_PUBLIC_APP_URL` solo si quiere fijar una.
 3. Verifique que `DEMO_MODE` sea `false`.
-4. Pruebe el Worker localmente y despliegue:
+4. Pruebe el Worker localmente y despliegue. `bun run deploy` aplica antes
+   las migraciones pendientes de D1:
 
 ```bash
 bun run preview
 bun run deploy
 ```
 
-Aplique `bun run db:migrate:remote` antes de desplegar cualquier versión que
-incluya migraciones nuevas.
+Las migraciones se referencian por el binding `DB`, no por el nombre de la
+base, para que funcionen también en instalaciones donde la base se llame
+distinto.
 
 ## Calidad
 

@@ -28,33 +28,10 @@
       "bucket_name": "sijac-private"
     }
   ],
-  "vars": {
-    "BETTER_AUTH_URL": "https://sijac-aguadas.jcga.workers.dev",
-    "NEXT_PUBLIC_APP_URL": "https://sijac-aguadas.jcga.workers.dev"
-  },
+  // Sin `vars` de URL: la aplicación toma el dominio de cada solicitud, así
+  // que funciona igual en *.workers.dev, en un dominio propio y en las copias
+  // creadas con el botón «Deploy to Cloudflare».
   "observability": {
     "enabled": true
-  },
-  "env": {
-    // Solo para scripts (`--remote`): apunta los bindings a producción
-    // desde la máquina local. No se despliega.
-    "remote": {
-      "d1_databases": [
-        {
-          "binding": "DB",
-          "database_name": "sijac",
-          "database_id": "91402af9-bd7f-49af-a39a-a517eeefb124",
-          "migrations_dir": "drizzle",
-          "remote": true
-        }
-      ],
-      "r2_buckets": [
-        {
-          "binding": "FILES",
-          "bucket_name": "sijac-private",
-          "remote": true
-        }
-      ]
-    }
   }
 }

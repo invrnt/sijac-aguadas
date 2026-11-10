@@ -1,0 +1,5 @@
+# Secretos que pide el botón «Deploy to Cloudflare». Las instrucciones de cada
+# uno están en package.json → cloudflare.bindings.
+SETUP_CODE=
+RESEND_API_KEY=pendiente
+EMAIL_FROM=SIJAC Aguadas <no-responder@example.gov.co>

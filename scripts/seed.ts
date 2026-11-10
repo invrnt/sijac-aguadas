@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { createAuth } from "@/lib/auth";
+import { resolveAuthSecret } from "@/lib/auth-secret";
 import { juntas, users } from "@/db/schema";
 import { openScriptDb } from "./d1";
 
@@ -19,7 +20,7 @@ if (targetsProduction && !process.env.SEED_ADMIN_PASSWORD) {
 }
 
 const { db, dispose } = await openScriptDb();
-const auth = createAuth(db);
+const auth = createAuth(db, { secret: await resolveAuthSecret(db) });
 
 async function ensureUser({
   email,

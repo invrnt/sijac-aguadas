@@ -1,0 +1,26 @@
+// Solo para scripts locales con `--remote` (semilla, importación): apunta los
+// bindings a los recursos de producción. No se despliega. Se mantiene fuera
+// de wrangler.jsonc para que el botón «Deploy to Cloudflare» no lo procese.
+// Si la base cambia, actualice aquí el mismo `database_id` de wrangler.jsonc.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sijac-aguadas",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "sijac",
+      "database_id": "91402af9-bd7f-49af-a39a-a517eeefb124",
+      "migrations_dir": "drizzle",
+      "remote": true
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "FILES",
+      "bucket_name": "sijac-private",
+      "remote": true
+    }
+  ]
+}

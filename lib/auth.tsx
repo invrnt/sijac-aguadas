@@ -5,16 +5,23 @@ import { nextCookies } from "better-auth/next-js";
 import { getDb, type Database } from "@/db";
 import * as schema from "@/db/schema";
 import { env } from "@/lib/env";
+import { resolveAuthSecret } from "@/lib/auth-secret";
+import { appOrigin } from "@/lib/origin";
 import { InvitationEmail } from "@/emails/InvitationEmail";
 import { PasswordResetEmail } from "@/emails/PasswordResetEmail";
 import { sendAccessEmail } from "@/lib/mail";
 
+type AuthOptions = { baseURL?: string; secret?: string };
+
 // D1 solo existe dentro de una solicitud, así que la instancia se crea al vuelo.
-export function createAuth(db: Database = getDb()) {
+export function createAuth(
+  db: Database = getDb(),
+  { baseURL = env.BETTER_AUTH_URL, secret = env.BETTER_AUTH_SECRET }: AuthOptions = {},
+) {
   return betterAuth({
     appName: "SIJAC Aguadas",
-    baseURL: env.BETTER_AUTH_URL,
-    secret: env.BETTER_AUTH_SECRET,
+    baseURL,
+    secret,
     database: drizzleAdapter(db, {
       provider: "sqlite",
       // D1 no admite transacciones interactivas.
@@ -86,6 +93,16 @@ export function createAuth(db: Database = getDb()) {
       }),
       nextCookies(),
     ],
+  });
+}
+
+// Instancia para una solicitud del Worker: toma la URL del dominio que recibió
+// la solicitud y la clave de sesiones de los secretos o de D1.
+export async function getAuth(requestHeaders: Headers) {
+  const db = getDb();
+  return createAuth(db, {
+    baseURL: appOrigin(requestHeaders),
+    secret: await resolveAuthSecret(db),
   });
 }
 

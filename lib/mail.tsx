@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 import { render } from "react-email";
-import { env } from "@/lib/env";
+import { emailConfigured, env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
 export async function sendAccessEmail({
@@ -17,9 +17,9 @@ export async function sendAccessEmail({
     render(email, { plainText: true }),
   ]);
 
-  if (!env.RESEND_API_KEY) {
+  if (!emailConfigured) {
     if (env.NODE_ENV === "production") {
-      logger.error("No se pudo enviar correo: RESEND_API_KEY ausente", {
+      logger.error("No se pudo enviar correo: RESEND_API_KEY ausente o inválida", {
         recipientDomain: to.split("@")[1],
       });
       throw new Error("EMAIL_NOT_CONFIGURED");

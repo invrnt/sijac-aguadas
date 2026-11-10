@@ -32,8 +32,9 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   // Leer los encabezados primero marca la ruta como dinámica, de modo que
   // `next build` no intente prerenderizarla sin el contexto de Cloudflare.
   const requestHeaders = await headers();
-  const { createAuth } = await import("@/lib/auth");
-  const session = await createAuth().api.getSession({
+  const { getAuth } = await import("@/lib/auth");
+  const auth = await getAuth(requestHeaders);
+  const session = await auth.api.getSession({
     headers: requestHeaders,
   });
   if (!session) return null;
