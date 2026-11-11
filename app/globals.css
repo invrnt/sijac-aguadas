@@ -2443,3 +2443,18 @@ textarea:focus {
     align-items: flex-start;
   }
 }
+
+.setup-email-warning {
+  margin-top: 12px;
+  background: var(--amber-soft);
+  color: #6b4a0f;
+}
+
+.setup-card .success-panel + .success-panel,
+.setup-card .success-panel + .error-message {
+  margin-top: 12px;
+}
+
+.setup-card .error-message p {
+  margin: 0 0 6px;
+}

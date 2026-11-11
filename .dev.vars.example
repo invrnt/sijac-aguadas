@@ -1,5 +1,4 @@
 # Secretos que pide el botón «Deploy to Cloudflare». Las instrucciones de cada
-# uno están en package.json → cloudflare.bindings.
+# uno están en package.json → cloudflare.bindings. Los correos salen por
+# Cloudflare Email Sending (binding EMAIL), que no necesita claves.
 SETUP_CODE=
-RESEND_API_KEY=pendiente
-EMAIL_FROM=SIJAC Aguadas <no-responder@example.gov.co>

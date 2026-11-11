@@ -15,7 +15,7 @@ const schema = z.object({
   SETUP_CODE: z.string().optional(),
   DEMO_MODE: z.enum(["true", "false"]).default("false"),
   RESEND_API_KEY: z.string().optional(),
-  EMAIL_FROM: z.string().default("SIJAC Aguadas <no-reply@example.gov.co>"),
+  EMAIL_FROM: z.string().default("SIJAC Aguadas <no-responder@sijac.org>"),
   SENTRY_DSN: z.string().optional(),
   LOG_LEVEL: z.string().default("info"),
 });
@@ -28,10 +28,9 @@ export const demoEnabled =
 // datos ficticios.
 export const hasDatabase = !demoEnabled;
 
-// Las claves de Resend empiezan por «re_». El formulario de despliegue exige
-// un valor, así que «pendiente» u otro texto cuenta como no configurado.
-export const emailConfigured = Boolean(env.RESEND_API_KEY?.startsWith("re_"));
-export const emailSenderConfigured = !env.EMAIL_FROM.includes("example.gov.co");
+// Resend queda como alternativa opcional a Cloudflare Email Sending. Sus
+// claves empiezan por «re_»; cualquier otro valor cuenta como no configurado.
+export const resendConfigured = Boolean(env.RESEND_API_KEY?.startsWith("re_"));
 
 export const SETUP_CODE_MIN_LENGTH = 8;
 export const setupCodeConfigured =

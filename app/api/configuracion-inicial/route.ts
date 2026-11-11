@@ -6,7 +6,9 @@ import { auditLogs, rateLimits } from "@/db/schema";
 import { getAuth } from "@/lib/auth";
 import { demoEnabled, env, setupCodeConfigured } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { appOrigin } from "@/lib/origin";
 import { hasAdmin } from "@/lib/setup";
+import { sendSetupTestEmail } from "@/lib/setup-email";
 
 const payloadSchema = z.object({
   setupCode: z.string().min(1).max(200),
@@ -139,7 +141,18 @@ export async function POST(request: Request) {
     logger.info("Asistente: administrador inicial creado", {
       userId: created.user.id,
     });
-    return NextResponse.json({ ok: true }, { status: 201 });
+
+    // Correo de prueba: confirma que el dominio quedó dado de alta. Si falla,
+    // la cuenta ya existe y el asistente explica cómo corregir el envío.
+    const email = await sendSetupTestEmail({
+      to: created.user.email,
+      name: created.user.name,
+      origin: appOrigin(request.headers),
+    });
+    return NextResponse.json(
+      { ok: true, email: { ...email, to: created.user.email } },
+      { status: 201 },
+    );
   } catch (error) {
     logger.error("Asistente: no se pudo crear el administrador", {
       error: error instanceof Error ? error.message : String(error),

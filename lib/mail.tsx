@@ -1,7 +1,49 @@
 import type { ReactElement } from "react";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { render } from "react-email";
-import { emailConfigured, env } from "@/lib/env";
+import { env, resendConfigured } from "@/lib/env";
 import { logger } from "@/lib/logger";
+
+export type EmailProvider = "cloudflare" | "resend" | "none";
+
+// Convierte «Nombre <correo@dominio>» en { name, email }.
+export function parseSender(value: string): { email: string; name?: string } {
+  const match = value.match(/^\s*(.*?)\s*<\s*([^>]+?)\s*>\s*$/);
+  if (!match) return { email: value.trim() };
+  const name = match[1].replace(/^"|"$/g, "").trim();
+  return name ? { name, email: match[2] } : { email: match[2] };
+}
+
+function senderAddress() {
+  const { email, name } = parseSender(env.EMAIL_FROM);
+  return name ? { email, name } : email;
+}
+
+function emailBinding() {
+  try {
+    return getCloudflareContext().env.EMAIL;
+  } catch {
+    return undefined;
+  }
+}
+
+// Cloudflare Email Sending es el canal principal: no necesita claves, solo el
+// binding EMAIL y el dominio del remitente dado de alta en Email Service.
+export function emailProvider(): EmailProvider {
+  if (emailBinding()) return "cloudflare";
+  if (resendConfigured) return "resend";
+  return "none";
+}
+
+export class EmailError extends Error {
+  constructor(
+    readonly code: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = "EmailError";
+  }
+}
 
 export async function sendAccessEmail({
   to,
@@ -16,17 +58,45 @@ export async function sendAccessEmail({
     render(email),
     render(email, { plainText: true }),
   ]);
+  const recipientDomain = to.split("@")[1];
+  const binding = emailBinding();
 
-  if (!emailConfigured) {
-    if (env.NODE_ENV === "production") {
-      logger.error("No se pudo enviar correo: RESEND_API_KEY ausente o inválida", {
-        recipientDomain: to.split("@")[1],
+  if (binding) {
+    try {
+      const result = await binding.send({
+        from: senderAddress(),
+        to,
+        subject,
+        html,
+        text,
       });
-      throw new Error("EMAIL_NOT_CONFIGURED");
+      logger.info("Correo enviado con Cloudflare", {
+        messageId: result.messageId,
+        recipientDomain,
+      });
+      return;
+    } catch (error) {
+      const code =
+        (error as { code?: string } | null)?.code ?? "E_UNKNOWN";
+      logger.error("Fallo de Cloudflare Email Sending", {
+        code,
+        error: error instanceof Error ? error.message : String(error),
+        recipientDomain,
+      });
+      throw new EmailError(code, "EMAIL_DELIVERY_FAILED");
+    }
+  }
+
+  if (!resendConfigured) {
+    if (env.NODE_ENV === "production") {
+      logger.error("No se pudo enviar correo: no hay canal configurado", {
+        recipientDomain,
+      });
+      throw new EmailError("EMAIL_NOT_CONFIGURED", "EMAIL_NOT_CONFIGURED");
     }
     logger.info("Correo de desarrollo renderizado y omitido", {
       subject,
-      recipientDomain: to.split("@")[1],
+      recipientDomain,
     });
     return;
   }
@@ -49,8 +119,8 @@ export async function sendAccessEmail({
   if (!response.ok) {
     logger.error("Fallo del proveedor de correo", {
       status: response.status,
-      recipientDomain: to.split("@")[1],
+      recipientDomain,
     });
-    throw new Error("EMAIL_DELIVERY_FAILED");
+    throw new EmailError(`RESEND_${response.status}`, "EMAIL_DELIVERY_FAILED");
   }
 }

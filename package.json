@@ -61,12 +61,6 @@
     "bindings": {
       "SETUP_CODE": {
         "description": "Invente una **clave de instalación** de al menos 8 caracteres y guárdela. Al terminar el despliegue, abra la dirección de la aplicación: el asistente de configuración se la pedirá una sola vez para crear la cuenta del administrador."
-      },
-      "RESEND_API_KEY": {
-        "description": "Clave para enviar correos (invitaciones y recuperación de contraseña). Cree una cuenta gratuita en [Resend](https://resend.com), vaya a [API Keys](https://resend.com/api-keys), pulse **Create API Key** y pegue aquí la clave (empieza por `re_`). Si aún no la tiene, deje `pendiente`: el asistente le explicará cómo agregarla después."
-      },
-      "EMAIL_FROM": {
-        "description": "Remitente de los correos, con un dominio verificado en [Resend → Domains](https://resend.com/domains). Ejemplo: `SIJAC Aguadas <no-responder@aguadas-caldas.gov.co>`. Puede dejar el valor de ejemplo y cambiarlo después."
       }
     }
   }

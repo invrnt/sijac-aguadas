@@ -15,8 +15,15 @@ import type { SetupCheck } from "@/lib/setup";
 
 const CLOUDFLARE_WORKERS_URL =
   "https://dash.cloudflare.com/?to=/:account/workers-and-pages";
+const CLOUDFLARE_DASHBOARD_URL = "https://dash.cloudflare.com/";
 
 type Step = "review" | "account" | "done";
+
+type EmailResult = {
+  status: "sent" | "failed" | "skipped";
+  code?: string;
+  to: string;
+};
 
 const stepLabels: Record<Step, string> = {
   review: "Revisión",
@@ -26,8 +33,8 @@ const stepLabels: Record<Step, string> = {
 
 export function SetupWizard({ checks }: { checks: SetupCheck[] }) {
   const [step, setStep] = useState<Step>("review");
+  const [emailResult, setEmailResult] = useState<EmailResult | null>(null);
   const requiredReady = checks.every((check) => check.ok || !check.required);
-  const emailReady = checks.find((check) => check.id === "email")?.ok ?? false;
 
   return (
     <>
@@ -54,10 +61,13 @@ export function SetupWizard({ checks }: { checks: SetupCheck[] }) {
       {step === "account" && (
         <AccountStep
           onBack={() => setStep("review")}
-          onDone={() => setStep("done")}
+          onDone={(result) => {
+            setEmailResult(result);
+            setStep("done");
+          }}
         />
       )}
-      {step === "done" && <DoneStep emailReady={emailReady} />}
+      {step === "done" && <DoneStep email={emailResult} />}
     </>
   );
 }
@@ -96,9 +106,9 @@ function ReviewStep({
               </span>
             </div>
             <p>{check.detail}</p>
-            {!check.ok && check.steps && (
-              <details open={check.required}>
-                <summary>Cómo resolverlo</summary>
+            {check.steps && (
+              <details open={!check.ok && check.required}>
+                <summary>{check.ok ? "Qué falta para que lleguen" : "Cómo resolverlo"}</summary>
                 <ol>
                   {check.steps.map((text) => (
                     <li key={text}>{text}</li>
@@ -106,7 +116,7 @@ function ReviewStep({
                 </ol>
               </details>
             )}
-            {!check.ok && check.links && (
+            {check.links && (
               <div className="setup-links">
                 {check.links.map((link) => (
                   <a
@@ -147,7 +157,7 @@ function AccountStep({
   onDone,
 }: {
   onBack: () => void;
-  onDone: () => void;
+  onDone: (email: EmailResult | null) => void;
 }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -185,7 +195,10 @@ function AccountStep({
       setMessage(body?.error ?? "No fue posible crear la cuenta.");
       return;
     }
-    onDone();
+    const body = (await response.json().catch(() => null)) as {
+      email?: EmailResult;
+    } | null;
+    onDone(body?.email ?? null);
   }
 
   return (
@@ -283,7 +296,55 @@ function AccountStep({
   );
 }
 
-function DoneStep({ emailReady }: { emailReady: boolean }) {
+function emailFailureHelp(code?: string) {
+  switch (code) {
+    case "E_SENDER_DOMAIN_NOT_AVAILABLE":
+    case "E_SENDER_NOT_VERIFIED":
+      return "El dominio del remitente todavía no está dado de alta o verificado. En Cloudflare abra Email Service → Email Sending, pulse «Onboard Domain», elija el dominio y espere entre 5 y 15 minutos.";
+    case "E_RATE_LIMIT_EXCEEDED":
+    case "E_DAILY_LIMIT_EXCEEDED":
+      return "Se alcanzó el límite de envío de la cuenta. Las cuentas nuevas empiezan con un cupo bajo que crece con el uso; intente más tarde.";
+    case "E_ACCOUNT_SUSPENDED":
+      return "Cloudflare pausó el envío de correos de la cuenta. Revise los avisos en el panel de Cloudflare.";
+    default:
+      return "Revise que la cuenta tenga el plan Workers Paid y que el dominio del remitente esté dado de alta en Email Service → Email Sending.";
+  }
+}
+
+function EmailStatus({ email }: { email: EmailResult | null }) {
+  if (!email || email.status === "skipped") {
+    return (
+      <p className="form-message setup-email-warning">
+        El envío de correos aún no está configurado. Puede activarlo después:
+        las invitaciones y recuperaciones de contraseña lo necesitan.
+      </p>
+    );
+  }
+  if (email.status === "sent") {
+    return (
+      <p className="success-panel">
+        Enviamos un correo de prueba a <strong>{email.to}</strong>. Si llega,
+        el envío funciona. Si no lo ve en unos minutos, revise la carpeta de
+        spam.
+      </p>
+    );
+  }
+  return (
+    <div className="form-message error-message" role="alert">
+      <p>
+        No se pudo enviar el correo de prueba a <strong>{email.to}</strong>
+        {email.code ? ` (código ${email.code})` : ""}.
+      </p>
+      <p>{emailFailureHelp(email.code)}</p>
+      <a className="text-link" href={CLOUDFLARE_DASHBOARD_URL} target="_blank" rel="noreferrer">
+        Abrir el panel de Cloudflare
+      </a>
+    </div>
+  );
+}
+
+function DoneStep({ email }: { email: EmailResult | null }) {
+  const emailReady = email?.status === "sent";
   return (
     <>
       <h1>¡SIJAC está listo!</h1>
@@ -291,6 +352,7 @@ function DoneStep({ emailReady }: { emailReady: boolean }) {
         La cuenta de administrador quedó creada. Este asistente ya no volverá a
         aparecer.
       </div>
+      <EmailStatus email={email} />
       <h2 className="setup-subtitle">Siguientes pasos</h2>
       <ol className="setup-next">
         <li>
@@ -300,13 +362,13 @@ function DoneStep({ emailReady }: { emailReady: boolean }) {
         <li>
           <strong>Cree las cuentas del equipo</strong> desde el módulo Usuarios.
           {!emailReady &&
-            " Para enviar invitaciones por correo, primero configure Resend (vea la revisión anterior)."}
+            " Las invitaciones llegan por correo, así que primero deje funcionando el envío."}
         </li>
         <li>
-          <strong>Opcional: use un dominio propio.</strong> En Cloudflare, abra
-          el proyecto «sijac-aguadas» → Configuración (Settings) → Dominios y
-          rutas (Domains &amp; Routes) → Agregar (Add) → Dominio personalizado
-          (Custom domain). El dominio debe estar administrado en Cloudflare.{" "}
+          <strong>Opcional: use el dominio en la aplicación.</strong> En
+          Cloudflare, abra el proyecto «sijac-aguadas» → Configuración
+          (Settings) → Dominios y rutas (Domains &amp; Routes) → Agregar (Add) →
+          Dominio personalizado (Custom domain), por ejemplo sijac.org.{" "}
           <a className="text-link" href={CLOUDFLARE_WORKERS_URL} target="_blank" rel="noreferrer">
             Abrir Cloudflare
           </a>

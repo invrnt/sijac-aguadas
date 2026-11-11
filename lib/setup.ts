@@ -3,18 +3,17 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { getDb } from "@/db";
 import { users } from "@/db/schema";
 import { resolveAuthSecret } from "@/lib/auth-secret";
-import {
-  emailConfigured,
-  emailSenderConfigured,
-  env,
-  SETUP_CODE_MIN_LENGTH,
-  setupCodeConfigured,
-} from "@/lib/env";
+import { env, SETUP_CODE_MIN_LENGTH, setupCodeConfigured } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { emailProvider, parseSender } from "@/lib/mail";
 
 export const WORKER_NAME = "sijac-aguadas";
 export const CLOUDFLARE_WORKERS_URL =
   "https://dash.cloudflare.com/?to=/:account/workers-and-pages";
+export const CLOUDFLARE_PLANS_URL =
+  "https://dash.cloudflare.com/?to=/:account/workers/plans";
+export const CLOUDFLARE_DASHBOARD_URL = "https://dash.cloudflare.com/";
+export const CLOUDFLARE_DOMAINS_URL = "https://domains.cloudflare.com/";
 
 export type SetupLink = { label: string; href: string };
 
@@ -149,39 +148,39 @@ export async function getSetupChecks(): Promise<SetupCheck[]> {
       : [{ label: "Abrir Workers en Cloudflare", href: CLOUDFLARE_WORKERS_URL }],
   });
 
-  const emailReady = emailConfigured && emailSenderConfigured;
+  // No hay forma de saber si el dominio ya está dado de alta sin enviar un
+  // correo: la prueba real ocurre al crear el administrador (paso 2).
+  const provider = emailProvider();
+  const senderDomain = parseSender(env.EMAIL_FROM).email.split("@")[1] ?? "";
   checks.push({
     id: "email",
     label: "Envío de correos",
-    ok: emailReady,
+    ok: provider !== "none",
     required: false,
-    detail: emailReady
-      ? "Resend está configurado para enviar invitaciones y recuperaciones de contraseña."
-      : "Opcional por ahora. Sin esto no se pueden enviar invitaciones ni recuperar contraseñas por correo.",
-    steps: emailReady
-      ? undefined
-      : [
-          "Cree una cuenta gratuita en Resend e ingrese.",
-          "En «Domains», agregue el dominio de la entidad (por ejemplo aguadas-caldas.gov.co) y pida a quien administra el dominio que agregue los registros DNS que Resend muestra.",
-          "En «API Keys», pulse «Create API Key», póngale un nombre y copie la clave (empieza por re_).",
-          ...(emailConfigured
-            ? []
-            : secretSteps("RESEND_API_KEY", "la clave copiada").slice(1, 3)),
-          ...(emailSenderConfigured
-            ? []
-            : secretSteps(
-                "EMAIL_FROM",
-                "el remitente, por ejemplo: SIJAC Aguadas <no-responder@aguadas-caldas.gov.co>",
-              ).slice(2, 3)),
-          "Pulse «Implementar» (Deploy) en Cloudflare y luego recargue esta página.",
-        ],
-    links: emailReady
-      ? undefined
-      : [
-          { label: "Crear la clave en Resend", href: "https://resend.com/api-keys" },
-          { label: "Verificar el dominio en Resend", href: "https://resend.com/domains" },
-          { label: "Abrir Workers en Cloudflare", href: CLOUDFLARE_WORKERS_URL },
-        ],
+    detail:
+      provider === "cloudflare"
+        ? `Conectado a Cloudflare Email Sending. Los correos saldrán desde ${env.EMAIL_FROM}. Al crear el administrador le enviaremos un correo de prueba.`
+        : provider === "resend"
+          ? `Conectado a Resend. Los correos saldrán desde ${env.EMAIL_FROM}.`
+          : "Sin canal de correo. Puede seguir: el sistema funciona, pero no enviará invitaciones ni recuperaciones de contraseña.",
+    steps:
+      provider === "resend"
+        ? undefined
+        : [
+            "Active el plan Workers Paid (USD 5 al mes) en Cloudflare: Workers y Pages → Planes.",
+            `Si aún no tiene el dominio ${senderDomain}, cómprelo en Cloudflare Registrar con la misma cuenta.`,
+            `En el panel de Cloudflare abra Email Service → Email Sending, pulse «Onboard Domain», elija ${senderDomain} y pulse «Add records and onboard». Cloudflare crea solo los registros DNS.`,
+            "Espere entre 5 y 15 minutos a que el dominio quede verificado.",
+            `Si usará otro dominio, cambie la variable EMAIL_FROM en el proyecto «${WORKER_NAME}» → Configuración (Settings) → Variables y secretos.`,
+          ],
+    links:
+      provider === "resend"
+        ? undefined
+        : [
+            { label: "Activar Workers Paid", href: CLOUDFLARE_PLANS_URL },
+            { label: "Comprar el dominio", href: CLOUDFLARE_DOMAINS_URL },
+            { label: "Abrir el panel de Cloudflare", href: CLOUDFLARE_DASHBOARD_URL },
+          ],
   });
 
   return checks;

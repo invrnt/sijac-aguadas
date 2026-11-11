@@ -28,9 +28,19 @@
       "bucket_name": "sijac-private"
     }
   ],
-  // Sin `vars` de URL: la aplicación toma el dominio de cada solicitud, así
-  // que funciona igual en *.workers.dev, en un dominio propio y en las copias
+  // Correos con Cloudflare Email Sending (requiere Workers Paid y el dominio
+  // del remitente dado de alta en Email Service → Email Sending).
+  "send_email": [
+    {
+      "name": "EMAIL"
+    }
+  ],
+  // Sin URLs fijas: la aplicación toma el dominio de cada solicitud, así que
+  // funciona igual en *.workers.dev, en un dominio propio y en las copias
   // creadas con el botón «Deploy to Cloudflare».
+  "vars": {
+    "EMAIL_FROM": "SIJAC Aguadas <no-responder@sijac.org>"
+  },
   "observability": {
     "enabled": true
   }

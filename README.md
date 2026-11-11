@@ -15,19 +15,27 @@ Pensado para quien no es técnico. No hay que instalar nada en el equipo:
    y conecte su cuenta de GitHub.
 2. Cloudflare crea solo la base de datos D1, el bucket privado R2, una copia
    del repositorio en su GitHub y la compilación automática.
-3. Complete los tres secretos que pide el formulario; cada uno trae su
-   explicación:
-   - `SETUP_CODE`: una clave de instalación que usted inventa (mínimo 8
-     caracteres).
-   - `RESEND_API_KEY`: la clave de [Resend](https://resend.com/api-keys) para
-     enviar correos. Puede dejar `pendiente` y agregarla después.
-   - `EMAIL_FROM`: el remitente de los correos.
+3. Complete el único secreto que pide el formulario: `SETUP_CODE`, una clave
+   de instalación que usted inventa (mínimo 8 caracteres).
 4. Deje el nombre del proyecto como `sijac-aguadas` y pulse **Create and
    deploy**. El despliegue crea también las tablas de la base de datos.
 5. Abra la dirección `https://sijac-aguadas.<su-subdominio>.workers.dev`. La
    aplicación lo lleva al asistente `/configuracion-inicial`, que revisa la
    instalación, le indica en el panel de Cloudflare cómo corregir lo que falte
    y crea la cuenta del administrador con la clave de instalación.
+
+Para que lleguen los correos (invitaciones y recuperación de contraseñas):
+
+1. Active el plan **Workers Paid** (USD 5 al mes) en la misma cuenta.
+2. Compre el dominio `sijac.org` en Cloudflare Registrar.
+3. En **Email Service → Email Sending**, pulse **Onboard Domain**, elija
+   `sijac.org` y pulse **Add records and onboard**. Cloudflare crea solo los
+   registros SPF y DKIM.
+
+No hay claves que copiar: el Worker envía con el binding `EMAIL`. Al crear el
+administrador, el asistente manda un correo de prueba y, si falla, explica la
+causa. El remitente es `EMAIL_FROM` en `vars` de `wrangler.jsonc`
+(`SIJAC Aguadas <no-responder@sijac.org>`); cámbielo si usa otro dominio.
 
 Cada cambio que se suba a la copia del repositorio se vuelve a desplegar solo.
 La clave de sesiones (`BETTER_AUTH_SECRET`) es opcional: si no se registra,
@@ -39,7 +47,7 @@ la aplicación genera una y la guarda en D1.
 - Better Auth para cuentas, sesiones, recuperación, bloqueo y roles
 - Cloudflare D1 (SQLite) con Drizzle ORM
 - Cloudflare R2 privado para documentos
-- React Email y Resend para correos transaccionales responsive
+- React Email y Cloudflare Email Sending para correos transaccionales
 - Bun como gestor de paquetes y ejecutor de scripts
 - Cloudflare Workers como destino de despliegue mediante OpenNext
 
@@ -82,12 +90,12 @@ bunx wrangler d1 create sijac
 bunx wrangler r2 bucket create sijac-private
 ```
 
-4. Registre los secretos del Worker:
+4. Dé de alta el dominio del remitente para el envío de correos (requiere
+   Workers Paid) y registre los secretos del Worker:
 
 ```bash
+bunx wrangler email sending enable sijac.org
 bunx wrangler secret put SETUP_CODE
-bunx wrangler secret put RESEND_API_KEY
-bunx wrangler secret put EMAIL_FROM
 # Opcional: si no existe, se genera y se guarda en D1.
 bunx wrangler secret put BETTER_AUTH_SECRET
 ```
@@ -107,14 +115,14 @@ de la aplicación después de verificar la sesión.
 | `BETTER_AUTH_SECRET` | No | Firma de cookies y tokens; sin ella se genera en D1 |
 | `BETTER_AUTH_URL` | No | URL base fija; sin ella se usa el dominio de la solicitud |
 | `NEXT_PUBLIC_APP_URL` | No | URL canónica fija para metadatos |
-| `RESEND_API_KEY` | Para correo real | Clave de Resend (empieza por `re_`) |
-| `EMAIL_FROM` | Para correo real | Remitente autorizado |
+| `EMAIL_FROM` | No | Remitente; por defecto `SIJAC Aguadas <no-responder@sijac.org>` (en `vars`) |
+| `RESEND_API_KEY` | No | Alternativa a Cloudflare Email Sending; solo se usa si se quita el binding `EMAIL` |
 | `DEMO_MODE` | Solo local | Sustituye D1 por datos ficticios |
 | `SEED_ADMIN_EMAIL` | No | Correo de cuenta inicial |
 | `SEED_ADMIN_PASSWORD` | Producción | Contraseña inicial explícita |
 
-La base de datos (`DB`) y los documentos (`FILES`) no usan variables: son
-bindings declarados en `wrangler.jsonc`. En el Worker, las variables públicas
+La base de datos (`DB`), los documentos (`FILES`) y el correo (`EMAIL`) no
+usan variables: son bindings declarados en `wrangler.jsonc`. En el Worker, las variables públicas
 se definen en `vars` de `wrangler.jsonc` o en el panel de Cloudflare, y los
 secretos con `wrangler secret put`.
 
@@ -128,8 +136,11 @@ de texto plano. Para revisar las plantillas localmente:
 bun run email:dev
 ```
 
-La previsualización no envía mensajes. El envío real requiere `RESEND_API_KEY`
-y un remitente verificado en `EMAIL_FROM`.
+La previsualización no envía mensajes. En `next dev` el binding `EMAIL` se
+simula: el mensaje se registra en la consola y no se envía. En el Worker, los
+correos salen por Cloudflare Email Sending desde `EMAIL_FROM`, cuyo dominio
+debe estar dado de alta en Email Service. Si se quita el binding, la
+aplicación usa Resend cuando hay una `RESEND_API_KEY` válida.
 
 ## Desplegar en Cloudflare Workers
 
