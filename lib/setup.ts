@@ -5,6 +5,7 @@ import { users } from "@/db/schema";
 import { resolveAuthSecret } from "@/lib/auth-secret";
 import { env, SETUP_CODE_MIN_LENGTH, setupCodeConfigured } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { ensureMigrations } from "@/lib/migrations";
 import { emailProvider, parseSender } from "@/lib/mail";
 
 export const WORKER_NAME = "sijac-aguadas";
@@ -29,6 +30,7 @@ export type SetupCheck = {
 };
 
 export async function hasAdmin() {
+  await ensureMigrations();
   const [row] = await getDb()
     .select({ count: sql<number>`count(*)` })
     .from(users)
@@ -58,6 +60,7 @@ export async function getSetupChecks(): Promise<SetupCheck[]> {
 
   let databaseReady = false;
   try {
+    await ensureMigrations();
     await getDb().select({ id: users.id }).from(users).limit(1);
     databaseReady = true;
   } catch (error) {
@@ -72,14 +75,13 @@ export async function getSetupChecks(): Promise<SetupCheck[]> {
     required: true,
     detail: databaseReady
       ? "La base de datos D1 está conectada y tiene sus tablas."
-      : "La base de datos no responde o todavía no tiene tablas. Las tablas se crean durante el despliegue.",
+      : "La base de datos no responde o no se pudieron crear sus tablas. La aplicación las crea sola en la primera visita.",
     steps: databaseReady
       ? undefined
       : [
-          "Abra el panel de Workers de Cloudflare.",
-          `Entre al proyecto «${WORKER_NAME}» y abra la pestaña «Implementaciones» (Deployments).`,
-          "Si el último despliegue falló, ábralo, revise el registro y pulse «Reintentar compilación» (Retry build).",
-          "Cuando termine en verde, recargue esta página.",
+          "Recargue esta página en un minuto: a veces la base de datos tarda en estar disponible justo después de crearla.",
+          `Si sigue igual, abra el panel de Workers de Cloudflare, entre al proyecto «${WORKER_NAME}» y revise en «Configuración» (Settings) → «Bindings» que exista la base de datos D1 con el nombre DB.`,
+          "En la pestaña «Registros» (Logs) busque el mensaje «No se pudo aplicar la migración» y envíelo al equipo técnico.",
         ],
     links: databaseReady
       ? undefined

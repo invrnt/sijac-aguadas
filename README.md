@@ -18,7 +18,8 @@ Pensado para quien no es técnico. No hay que instalar nada en el equipo:
 3. Complete el único secreto que pide el formulario: `SETUP_CODE`, una clave
    de instalación que usted inventa (mínimo 8 caracteres).
 4. Deje el nombre del proyecto como `sijac-aguadas` y pulse **Create and
-   deploy**. El despliegue crea también las tablas de la base de datos.
+   deploy**. Las tablas de la base de datos se crean solas en la primera
+   visita.
 5. Abra la dirección `https://sijac-aguadas.<su-subdominio>.workers.dev`. La
    aplicación lo lleva al asistente `/configuracion-inicial`, que revisa la
    instalación, le indica en el panel de Cloudflare cómo corregir lo que falte
@@ -72,8 +73,14 @@ Con `DEMO_MODE=true` la aplicación ofrece acceso local como Administrador o
 Consulta y usa exclusivamente datos ficticios, sin tocar D1.
 
 `bun run db:generate` crea la migración SQL en `drizzle/` a partir de
-`db/schema.ts`. Ejecútelo cada vez que cambie el esquema y versione el
-resultado.
+`db/schema.ts` y la empaqueta en `db/migrations/bundled.ts`. Ejecútelo cada
+vez que cambie el esquema y versione ambos resultados.
+
+El Worker aplica las migraciones pendientes al recibir la primera solicitud
+de cada instancia (`lib/migrations.ts`), con su propio binding D1. Usa la
+misma tabla `d1_migrations` que `wrangler d1 migrations apply`, así que los
+dos caminos son compatibles. Esto evita depender de que el token de Workers
+Builds tenga permisos sobre D1, que por defecto no tiene.
 
 ## Configurar Cloudflare
 
@@ -150,17 +157,17 @@ aplicación usa Resend cuando hay una `RESEND_API_KEY` válida.
 2. Las URL no hacen falta: la aplicación usa el dominio de cada solicitud.
    Defina `BETTER_AUTH_URL` o `NEXT_PUBLIC_APP_URL` solo si quiere fijar una.
 3. Verifique que `DEMO_MODE` sea `false`.
-4. Pruebe el Worker localmente y despliegue. `bun run deploy` aplica antes
-   las migraciones pendientes de D1:
+4. Pruebe el Worker localmente y despliegue:
 
 ```bash
 bun run preview
 bun run deploy
 ```
 
-Las migraciones se referencian por el binding `DB`, no por el nombre de la
-base, para que funcionen también en instalaciones donde la base se llame
-distinto.
+En Workers Builds basta con los comandos predeterminados: `npm run build`
+genera la salida de OpenNext cuando detecta `WORKERS_CI=1`, y
+`npx wrangler deploy` la publica. `npm run deploy` también funciona como
+comando de despliegue.
 
 ## Calidad
 

@@ -6,6 +6,7 @@ import { getDb, type Database } from "@/db";
 import * as schema from "@/db/schema";
 import { env } from "@/lib/env";
 import { resolveAuthSecret } from "@/lib/auth-secret";
+import { ensureMigrations } from "@/lib/migrations";
 import { appOrigin } from "@/lib/origin";
 import { InvitationEmail } from "@/emails/InvitationEmail";
 import { PasswordResetEmail } from "@/emails/PasswordResetEmail";
@@ -99,6 +100,7 @@ export function createAuth(
 // Instancia para una solicitud del Worker: toma la URL del dominio que recibió
 // la solicitud y la clave de sesiones de los secretos o de D1.
 export async function getAuth(requestHeaders: Headers) {
+  await ensureMigrations();
   const db = getDb();
   return createAuth(db, {
     baseURL: appOrigin(requestHeaders),
