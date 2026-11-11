@@ -1,4 +1,4 @@
-const CACHE = "sijac-shell-v2";
+const CACHE = "sijac-shell-v3";
 const FALLBACK = "/sin-conexion.html";
 
 self.addEventListener("install", (event) => {

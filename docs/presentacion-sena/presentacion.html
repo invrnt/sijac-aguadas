@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>SIJAC Aguadas — Presentación SENA</title>
+<meta name="author" content="Maria Clara Álvarez Toloza">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4; margin: 0; }
+  :root {
+    --g950:#0d2a23; --g900:#173f35; --g800:#24584b; --g700:#337061; --g100:#e4eee9; --g50:#f1f6f3;
+    --paper:#fffdfa; --ink:#18332c; --muted:#5f6f69; --line:#dde4e0;
+    --terra:#ad5f43; --terra-soft:#f6e7df; --amber:#9a6b16; --amber-soft:#faf0d3; --blue:#346887; --blue-soft:#e3eef4;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html, body { background:var(--paper); color:var(--ink); font-family:Inter, sans-serif; font-size:10.5pt; line-height:1.55; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .page { width:210mm; height:297mm; position:relative; overflow:hidden; page-break-after:always; padding:20mm 18mm 18mm; background:var(--paper); }
+  .page:last-child { page-break-after:auto; }
+  h1,h2,h3 { font-family:Fraunces, serif; color:var(--g900); line-height:1.12; }
+  h2 { font-size:25pt; margin-bottom:5mm; letter-spacing:-.01em; }
+  h3 { font-size:13pt; margin-bottom:2mm; }
+  p { margin-bottom:3mm; }
+  .kicker { font-size:8pt; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--terra); margin-bottom:3mm; }
+  .lead { font-size:12pt; color:var(--muted); max-width:150mm; }
+  .foot { position:absolute; left:18mm; right:18mm; bottom:9mm; display:flex; justify-content:space-between; font-size:7.5pt; color:var(--muted); border-top:1px solid var(--line); padding-top:2.5mm; }
+  .foot b { color:var(--g800); }
+  .shot { border-radius:3mm; overflow:hidden; border:1px solid var(--line); box-shadow:0 6mm 14mm rgba(15,50,42,.12); background:#fff; }
+  .shot img { display:block; width:100%; object-fit:cover; object-position:top left; }
+  .shot .bar { height:5mm; background:#eef1ef; display:flex; align-items:center; gap:1.4mm; padding-left:2.5mm; border-bottom:1px solid var(--line); }
+  .shot .bar i { width:1.8mm; height:1.8mm; border-radius:50%; background:#c9d3ce; display:block; }
+  .cap { font-size:8.5pt; color:var(--muted); margin-top:2.5mm; }
+  .note { font-family:Caveat, cursive; font-size:15pt; color:var(--terra); line-height:1.15; }
+  .bubble { background:var(--terra-soft); border-left:1.2mm solid var(--terra); border-radius:0 2.5mm 2.5mm 0; padding:4mm 5mm; margin:4mm 0; }
+  .bubble p:last-child { margin:0; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:6mm; }
+  .grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:4mm; }
+  .card { background:var(--g50); border:1px solid var(--line); border-radius:3mm; padding:4.5mm; }
+  .card h3 { font-size:11.5pt; }
+  .card p { font-size:9.3pt; color:var(--muted); margin:0; }
+  .num { font-family:Fraunces, serif; font-size:30pt; color:var(--g800); line-height:1; }
+  .tag { display:inline-block; font-size:7.5pt; font-weight:600; padding:.6mm 2.4mm; border-radius:10mm; background:var(--g100); color:var(--g800); margin:0 1mm 1mm 0; }
+
+  .cover { padding:0; background:var(--g950); color:#fff; }
+  .cover .img { position:absolute; inset:0; background:url(img/hero.jpg) center 30%/cover; opacity:.7; }
+  .cover .shade { position:absolute; inset:0; background:linear-gradient(180deg, rgba(13,42,35,.2) 0%, rgba(13,42,35,.45) 45%, rgba(13,42,35,.97) 78%); }
+  .cover .inner { position:absolute; left:20mm; right:20mm; bottom:24mm; }
+  .cover .logo { position:absolute; top:18mm; left:20mm; background:#fffdfa; border-radius:3mm; padding:3.5mm 5mm; }
+  .cover .logo img { height:17mm; display:block; }
+  .cover .sena { position:absolute; top:22mm; right:20mm; text-align:right; font-size:8.5pt; letter-spacing:.14em; text-transform:uppercase; color:#fff; text-shadow:0 1px 4px rgba(0,0,0,.5); }
+  .cover h1 { color:#fff; font-size:54pt; letter-spacing:-.02em; margin-bottom:4mm; }
+  .cover .sub { font-size:15pt; color:#dfe9e3; max-width:140mm; margin-bottom:9mm; font-family:Fraunces, serif; }
+  .cover .meta { display:flex; gap:10mm; border-top:1px solid rgba(255,255,255,.25); padding-top:5mm; font-size:9pt; color:#cfdcd5; }
+  .cover .meta b { display:block; color:#fff; font-size:10pt; }
+  .cover .kicker { color:#f0b9a2; }
+
+  .split { display:grid; grid-template-columns:1.05fr .95fr; gap:9mm; align-items:start; }
+  .before li, .after li { list-style:none; padding:2mm 0 2mm 7mm; position:relative; border-bottom:1px dashed var(--line); font-size:9.8pt; }
+  .before li::before { content:"✕"; position:absolute; left:0; color:var(--terra); font-weight:700; }
+  .after li::before { content:"✓"; position:absolute; left:0; color:var(--g700); font-weight:700; }
+
+  .mod { display:grid; grid-template-columns:9mm 1fr; gap:3mm; padding:3.2mm 0; border-bottom:1px solid var(--line); }
+  .mod .ic { width:9mm; height:9mm; border-radius:2.5mm; background:var(--g100); color:var(--g800); display:flex; align-items:center; justify-content:center; font-weight:700; font-family:Fraunces,serif; font-size:11pt; }
+  .mod b { display:block; color:var(--g900); font-size:10pt; }
+  .mod span { font-size:9pt; color:var(--muted); }
+
+  .flow { display:grid; grid-template-columns:repeat(4,1fr); gap:3mm; margin:5mm 0 7mm; }
+  .step { background:#fff; border:1px solid var(--line); border-radius:3mm; padding:4mm; position:relative; }
+  .step .n { width:7mm; height:7mm; border-radius:50%; background:var(--g800); color:#fff; font-weight:700; font-size:9pt; display:flex; align-items:center; justify-content:center; margin-bottom:2.5mm; }
+  .step b { display:block; font-size:10pt; color:var(--g900); margin-bottom:1mm; }
+  .step span { font-size:8.6pt; color:var(--muted); }
+  .step:not(:last-child)::after { content:"→"; position:absolute; right:-3.4mm; top:50%; transform:translateY(-50%); color:var(--terra); font-weight:700; z-index:2; background:var(--paper); }
+
+  .arch { display:grid; grid-template-columns:1fr 1.25fr 1fr; gap:4mm; align-items:center; margin:5mm 0 6mm; }
+  .box { border-radius:3mm; padding:4mm; text-align:center; font-size:9pt; }
+  .box b { display:block; font-size:10.5pt; margin-bottom:1mm; }
+  .box.user { background:var(--blue-soft); color:var(--blue); }
+  .box.app { background:var(--g900); color:#e3ece7; }
+  .box.app b { color:#fff; }
+  .stack { display:flex; flex-direction:column; gap:2.5mm; }
+  .box.store { background:var(--amber-soft); color:var(--amber); text-align:left; padding:3mm 4mm; }
+
+  .tl { position:relative; margin-left:4mm; padding-left:8mm; border-left:.6mm solid var(--g100); }
+  .tl .it { position:relative; margin-bottom:4.2mm; }
+  .tl .it::before { content:""; position:absolute; left:-10.3mm; top:1.2mm; width:3.6mm; height:3.6mm; border-radius:50%; background:var(--paper); border:.8mm solid var(--g700); }
+  .tl .it b { color:var(--g900); font-size:10.5pt; }
+  .tl .it p { font-size:9.3pt; color:var(--muted); margin:.5mm 0 0; }
+
+  .phones { display:flex; gap:6mm; justify-content:center; }
+  .phone { width:52mm; border-radius:7mm; padding:2.2mm; background:#10241f; box-shadow:0 6mm 14mm rgba(15,50,42,.2); }
+  .phone img { width:100%; border-radius:5mm; display:block; }
+</style>
+</head>
+<body>
+
+<!-- 1. PORTADA -->
+<section class="page cover">
+  <div class="img"></div><div class="shade"></div>
+  <div class="logo"><img src="img/sijac-logo.png" alt="SIJAC"></div>
+  <div class="sena">Proyecto formativo<br>SENA · Programación de software</div>
+  <div class="inner">
+    <div class="kicker">Presentación de proyecto</div>
+    <h1>SIJAC Aguadas</h1>
+    <p class="sub">Un sistema web para organizar la información de las 68 Juntas de Acción Comunal de Aguadas, Caldas.</p>
+    <div class="meta">
+      <div><b>Presentado por</b>Maria Clara Álvarez Toloza</div>
+      <div><b>Tipo</b>Aplicación web y PWA</div>
+      <div><b>Para</b>Oficina de Desarrollo Comunitario</div>
+      <div><b>Fecha</b>Noviembre de 2026</div>
+    </div>
+  </div>
+</section>
+
+<!-- 2. PRESENTACIÓN -->
+<section class="page">
+  <div class="kicker">Antes de empezar</div>
+  <h2>Presentación del proyecto</h2>
+  <p class="lead">SIJAC Aguadas es un sistema web que reúne en un solo lugar la información de las Juntas de Acción Comunal del municipio. En este documento presento qué es, para qué sirve y cómo se construyó.</p>
+
+  <div class="bubble"><p>El objetivo es claro: <b>que la Oficina de Desarrollo Comunitario tenga a la mano, ordenada y segura, la información de cada junta</b>, y que pueda consultarla desde el computador o el celular.</p></div>
+
+  <div class="grid3" style="margin-top:8mm">
+    <div class="card"><div class="num">68</div><h3 style="margin-top:2mm">Juntas</h3><p>Todas las Juntas de Acción Comunal del municipio en un solo lugar.</p></div>
+    <div class="card"><div class="num">11</div><h3 style="margin-top:2mm">Módulos</h3><p>Juntas, reuniones, actas, compromisos, actividades, reportes y más.</p></div>
+    <div class="card"><div class="num">2</div><h3 style="margin-top:2mm">Roles</h3><p>Administrador, que edita, y Consulta, que solo mira e imprime.</p></div>
+  </div>
+
+  <h3 style="margin-top:10mm">¿Qué van a encontrar en este documento?</h3>
+  <div class="tl" style="margin-top:4mm">
+    <div class="it"><b>1. El problema</b><p>Por qué hacía falta este sistema.</p></div>
+    <div class="it"><b>2. El producto</b><p>Un recorrido por las pantallas, con capturas reales de la aplicación.</p></div>
+    <div class="it"><b>3. Cómo funciona</b><p>Explicado de la forma más sencilla posible.</p></div>
+    <div class="it"><b>4. Cómo lo hice</b><p>Los pasos, las herramientas y los resultados.</p></div>
+  </div>
+  <div class="foot"><span><b>SIJAC Aguadas</b> · Presentación SENA · Maria Clara Álvarez Toloza</span><span>02</span></div>
+</section>
+
+<!-- 3. PROBLEMA -->
+<section class="page">
+  <div class="kicker">1 · El problema</div>
+  <h2>Mucha información, regada por todas partes</h2>
+  <p class="lead">Las Juntas de Acción Comunal son las organizaciones de los barrios y las veredas. Cada una tiene presidente, tesorero, reuniones, actas, convenios… y la alcaldía tiene que estar pendiente de las 68.</p>
+
+  <div class="split" style="margin-top:7mm">
+    <div>
+      <h3>Antes</h3>
+      <ul class="before">
+        <li>Datos en carpetas físicas, hojas de Excel y chats.</li>
+        <li>Difícil saber quién es el dignatario vigente de cada junta.</li>
+        <li>Las actas se escribían cada una con un formato distinto.</li>
+        <li>Los compromisos de las reuniones se olvidaban.</li>
+        <li>Armar un informe tomaba días.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Con SIJAC</h3>
+      <ul class="after">
+        <li>Una ficha por junta, con todo en el mismo lugar.</li>
+        <li>Dignatarios y periodos siempre actualizados.</li>
+        <li>Actas con el mismo formato y descarga en PDF.</li>
+        <li>Compromisos con responsable, fecha y estado.</li>
+        <li>Reportes listos para imprimir o exportar a CSV.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="shot" style="margin-top:10mm"><div class="bar"><i></i><i></i><i></i></div><img style="height:92mm" src="img/home.jpg" alt=""></div>
+  <p class="cap">La página de inicio del sistema, con una foto de la plaza principal de Aguadas.</p>
+  <div class="foot"><span><b>SIJAC Aguadas</b> · Presentación SENA · Maria Clara Álvarez Toloza</span><span>03</span></div>
+</section>
+
+<!-- 4. PANEL -->
+<section class="page">
+  <div class="kicker">2 · El producto</div>
+  <h2>Lo primero que se ve: el panel</h2>
+  <p class="lead">Después de iniciar sesión, el sistema saluda y muestra un resumen de cómo va todo: cuántas juntas hay, cuántas están activas, cuántos afiliados y qué compromisos siguen abiertos.</p>
+  <div class="shot" style="margin-top:6mm"><div class="bar"><i></i><i></i><i></i></div><img src="img/panel.jpg" alt=""></div>
+  <p class="cap">Panel principal con indicadores, actividad reciente, acciones rápidas y próximas reuniones. (Los datos son de demostración).</p>
+
+  <div class="grid2" style="margin-top:7mm">
+    <div>
+      <h3>Pensado para no perderse</h3>
+      <p style="font-size:9.6pt">A la izquierda siempre está el menú. Las “acciones rápidas” llevan directo a lo que más se hace: registrar una junta, buscar una o crear una reunión.</p>
+    </div>
+    <div>
+      <p class="note">“Todos los números del panel se calculan en vivo a partir de la base de datos.”</p>
+    </div>
+  </div>
+  <div class="foot"><span><b>SIJAC Aguadas</b> · Presentación SENA · Maria Clara Álvarez Toloza</span><span>04</span></div>
+</section>
+
+<!-- 5. JUNTAS -->
+<section class="page">
+  <div class="kicker">2 · El producto</div>
+  <h2>El corazón del sistema: las juntas</h2>
+  <p class="lead">Hay un directorio donde se puede buscar por nombre, código, barrio, vereda o NIT, y filtrar por estado o por zona (urbana o rural).</p>
+  <div class="shot" style="margin-top:5mm"><div class="bar"><i></i><i></i><i></i></div><img style="height:84mm" src="img/juntas.jpg" alt=""></div>
+  <p class="cap">Directorio de juntas con buscador, filtros, porcentaje de información completa y exportación a CSV.</p>
+  <div class="shot" style="margin-top:6mm"><div class="bar"><i></i><i></i><i></i></div><img style="height:84mm" src="img/junta-detalle.jpg" alt=""></div>
+  <p class="cap">La ficha de cada junta: información institucional, dignatarios, convenios y documentos en pestañas.</p>
+  <div class="foot"><span><b>SIJAC Aguadas</b> · Presentación SENA · Maria Clara Álvarez Toloza</span><span>05</span></div>
+</section>
+
+<!-- 6. REUNIONES Y ACTAS -->
+<section class="page">
+  <div class="kicker">2 · El producto</div>
+  <h2>De la reunión al acta</h2>
+  <p class="lead">Esta parte sigue el camino real de una reunión comunal:</p>
+  <div class="flow">
+    <div class="step"><div class="n">1</div><b>Convocar</b><span>Se crea la reunión con fecha, lugar y junta.</span></div>
+    <div class="step"><div class="n">2</div><b>Orden del día</b><span>Se agregan los puntos que se van a tratar.</span></div>
+    <div class="step"><div class="n">3</div><b>Asistencia</b><span>Se registra quién fue, para saber si hay quórum.</span></div>
+    <div class="step"><div class="n">4</div><b>Acta</b><span>Se redacta, se revisa, se aprueba y se baja en PDF.</span></div>
+  </div>
+  <div class="grid2">
+    <div><div class="shot"><div class="bar"><i></i><i></i><i></i></div><img src="img/reunion-detalle.jpg" alt=""></div><p class="cap">Detalle de una reunión con orden del día y asistencia.</p></div>
+    <div><div class="shot"><div class="bar"><i></i><i></i><i></i></div><img src="img/acta-detalle.jpg" alt=""></div><p class="cap">Un acta en revisión, con su desarrollo y decisiones.</p></div>
+  </div>
+  <div class="bubble" style="margin-top:7mm"><p><b>Cada registro tiene un estado.</b> Un acta pasa de <span class="tag">Borrador</span> a <span class="tag">En revisión</span> y luego a <span class="tag">Cerrada</span>, y el sistema no deja saltarse pasos. Así nadie cierra un acta por accidente.</p></div>
+  <div class="foot"><span><b>SIJAC Aguadas</b> · Presentación SENA · Maria Clara Álvarez Toloza</span><span>06</span></div>
+</section>
+
+<!-- 7. COMPROMISOS / ACTIVIDADES / REPORTES -->
+<section class="page">
+  <div class="kicker">2 · El producto</div>
+  <h2>Que nada se quede en el aire</h2>
+  <div class="grid2" style="margin-top:2mm">
+    <div><div class="shot"><div class="bar"><i></i><i></i><i></i></div><img style="height:62mm" src="img/compromisos.jpg" alt=""></div>
+      <h3 style="margin-top:4mm">Compromisos</h3><p style="font-size:9.4pt;color:var(--muted)">Lo que se acuerda en una reunión queda con responsable, fecha límite y estado: pendiente, en curso, bloqueado o cumplido.</p></div>
+    <div><div class="shot"><div class="bar"><i></i><i></i><i></i></div><img style="height:62mm" src="img/actividades.jpg" alt=""></div>
+      <h3 style="margin-top:4mm">Actividades</h3><p style="font-size:9.4pt;color:var(--muted)">Jornadas de limpieza, talleres, mercados campesinos… con lugar, fecha, beneficiarios y evidencias.</p></div>
+  </div>
+  <div class="shot" style="margin-top:7mm"><div class="bar"><i></i><i></i><i></i></div><img style="height:72mm" src="img/reportes.jpg" alt=""></div>
+  <h3 style="margin-top:4mm">Reportes</h3>
+  <p style="font-size:9.6pt;color:var(--muted)">Con un clic salen listados para imprimir o descargar en CSV (se abre en Excel): directorio de juntas, dignatarios vigentes, compromisos abiertos, actividades y calidad de la información, que muestra qué fichas están incompletas.</p>
+  <div class="foot"><span><b>SIJAC Aguadas</b> · Presentación SENA · Maria Clara Álvarez Toloza</span><span>07</span></div>
+</section>
+
+<!-- 8. CELULAR + ADMIN -->
+<section class="page">
+  <div class="kicker">2 · El producto</div>
+  <h2>Funciona en el celular</h2>
+  <div class="grid2" style="grid-template-columns:1.15fr .85fr; align-items:center">
+    <div class="phones"><div class="phone"><img src="img/m-panel.jpg" alt=""></div><div class="phone" style="margin-top:12mm"><img src="img/m-juntas.jpg" alt=""></div></div>
+    <div>
+      <p>Muchos líderes comunales usan más el celular que el computador, así que todo se diseñó primero para pantallas pequeñas (<i>mobile first</i>).</p>
+      <p>Además es una <b>PWA</b>: se puede “instalar” como si fuera una app, con su ícono en la pantalla de inicio, sin pasar por ninguna tienda.</p>
+      <p class="note" style="margin-top:5mm">“Se usa igual de bien en el computador, la tableta o el celular.”</p>
+    </div>
+  </div>
+  <h2 style="font-size:19pt;margin-top:11mm">Y para el administrador…</h2>
+  <div class="grid2">
+    <div><div class="shot"><div class="bar"><i></i><i></i><i></i></div><img src="img/administracion-usuarios.jpg" alt=""></div><p class="cap">Usuarios y roles: invitar por correo, suspender o reactivar cuentas.</p></div>
+    <div><div class="shot"><div class="bar"><i></i><i></i><i></i></div><img src="img/administracion-auditoria.jpg" alt=""></div><p class="cap">Auditoría: queda guardado quién cambió qué y cuándo.</p></div>
+  </div>
+  <div class="foot"><span><b>SIJAC Aguadas</b> · Presentación SENA · Maria Clara Álvarez Toloza</span><span>08</span></div>
+</section>
+
+<!-- 9. CÓMO FUNCIONA -->
+<section class="page">
+  <div class="kicker">3 · Cómo funciona</div>
+  <h2>Por dentro, explicado fácil</h2>
+  <p class="lead">En pocas palabras: el usuario abre la página, la aplicación procesa lo que pide y guarda o busca la información en la nube.</p>
+  <div class="arch">
+    <div class="box user"><b>👩‍💼 Usuario</b>Desde el computador o el celular, en el navegador.</div>
+    <div class="box app"><b>Aplicación SIJAC</b>Hecha con Next.js y React.<br>Revisa la sesión y los permisos antes de mostrar o guardar algo.</div>
+    <div class="stack">
+      <div class="box store"><b>Base de datos (D1)</b>Juntas, reuniones, actas…</div>
+      <div class="box store"><b>Archivos privados (R2)</b>Documentos y PDFs.</div>
+      <div class="box store"><b>Correo</b>Invitaciones y recuperar contraseña.</div>
+    </div>
+  </div>
+
+  <h3>Los módulos, uno por uno</h3>
+  <div class="grid2" style="gap:0 8mm">
+    <div>
+      <div class="mod"><div class="ic">P</div><div><b>Panel</b><span>Resumen con indicadores y lo reciente.</span></div></div>
+      <div class="mod"><div class="ic">J</div><div><b>Juntas</b><span>Directorio, fichas, dignatarios y convenios.</span></div></div>
+      <div class="mod"><div class="ic">D</div><div><b>Documentos</b><span>Archivos privados con enlaces temporales.</span></div></div>
+      <div class="mod"><div class="ic">R</div><div><b>Reuniones</b><span>Convocatoria, orden del día y asistencia.</span></div></div>
+      <div class="mod"><div class="ic">A</div><div><b>Actas</b><span>Redacción, revisión, aprobación y PDF.</span></div></div>
+      <div class="mod"><div class="ic">C</div><div><b>Compromisos</b><span>Responsables, fechas y avance.</span></div></div>
+    </div>
+    <div>
+      <div class="mod"><div class="ic">Ac</div><div><b>Actividades</b><span>Eventos comunitarios y evidencias.</span></div></div>
+      <div class="mod"><div class="ic">Re</div><div><b>Reportes</b><span>Imprimir y exportar a CSV.</span></div></div>
+      <div class="mod"><div class="ic">M</div><div><b>Manual</b><span>Guía interactiva dentro de la app.</span></div></div>
+      <div class="mod"><div class="ic">U</div><div><b>Usuarios</b><span>Cuentas, roles e invitaciones.</span></div></div>
+      <div class="mod"><div class="ic">Au</div><div><b>Auditoría</b><span>Historial de cambios importantes.</span></div></div>
+    </div>
+  </div>
+  <div class="foot"><span><b>SIJAC Aguadas</b> · Presentación SENA · Maria Clara Álvarez Toloza</span><span>09</span></div>
+</section>
+
+<!-- 10. SEGURIDAD + MANUAL -->
+<section class="page">
+  <div class="kicker">3 · Cómo funciona</div>
+  <h2>Cuidar la información</h2>
+  <p class="lead">Como el sistema maneja datos de personas, la seguridad es una prioridad. Estas son las cosas que tiene el sistema:</p>
+  <div class="grid2" style="margin-top:5mm;gap:4mm">
+    <div class="card"><h3>🔐 Inicio de sesión</h3><p>Con correo o usuario y contraseña. Si alguien intenta muchas veces, el sistema lo frena.</p></div>
+    <div class="card"><h3>👥 Roles y permisos</h3><p>El rol Consulta solo puede ver. Los permisos se revisan en la pantalla <b>y también en el servidor</b>.</p></div>
+    <div class="card"><h3>📁 Archivos privados</h3><p>Los documentos no tienen un link público: se descargan con enlaces que se vencen.</p></div>
+    <div class="card"><h3>✉️ Recuperar acceso</h3><p>Llega un correo con un enlace de un solo uso para crear otra contraseña.</p></div>
+    <div class="card"><h3>📝 Auditoría</h3><p>Los cambios sensibles quedan registrados y no se pueden editar.</p></div>
+    <div class="card"><h3>👤 Dos administradores</h3><p>Al instalarlo se crean dos, para que la alcaldía nunca se quede sin acceso.</p></div>
+  </div>
+  <div class="grid2" style="margin-top:8mm;align-items:center">
+    <div class="shot"><div class="bar"><i></i><i></i><i></i></div><img src="img/manual.jpg" alt=""></div>
+    <div><h3>Un manual dentro de la app</h3><p style="font-size:9.6pt;color:var(--muted)">Pensado para las personas que no son “de sistemas”: un manual interactivo, con buscador y una lista de primeros pasos que se va marcando a medida que uno aprende.</p></div>
+  </div>
+  <div class="foot"><span><b>SIJAC Aguadas</b> · Presentación SENA · Maria Clara Álvarez Toloza</span><span>10</span></div>
+</section>
+
+<!-- 11. CÓMO LO HICE -->
+<section class="page">
+  <div class="kicker">4 · Cómo lo hice</div>
+  <h2>Mi camino, paso a paso</h2>
+  <div class="split" style="grid-template-columns:1.1fr .9fr">
+    <div class="tl">
+      <div class="it"><b>Entender el problema</b><p>Primero escribí los casos de uso: quién hace qué en el sistema. Me salieron 20, desde “iniciar sesión” hasta “generar un acta en PDF”.</p></div>
+      <div class="it"><b>Diseñar la base de datos</b><p>Dibujé las tablas: juntas, dignatarios, reuniones, actas… y cómo se relacionan entre sí.</p></div>
+      <div class="it"><b>Construir las pantallas</b><p>Hice el panel, el directorio y las fichas. Usé los colores verdes y terracota pensando en las montañas y los techos de Aguadas.</p></div>
+      <div class="it"><b>Agregar cuentas y permisos</b><p>Inicio de sesión, roles, recuperación de contraseña y correos.</p></div>
+      <div class="it"><b>Mejorar la infraestructura</b><p>El proyecto empezó con Supabase y luego se migró todo a Cloudflare, para que fuera más simple y económico de mantener.</p></div>
+      <div class="it"><b>Publicarlo</b><p>Hice un botón de “instalar con un clic” y un asistente de configuración inicial, para que la alcaldía no tenga que saber programar.</p></div>
+      <div class="it"><b>Corregir errores</b><p>Por ejemplo, se ajustaron las fechas a la zona horaria de Colombia para que siempre salgan con la hora correcta.</p></div>
+    </div>
+    <div>
+      <h3>Las herramientas que usé</h3>
+      <p style="font-size:9.2pt;color:var(--muted)">Tecnologías modernas, apoyadas en su documentación oficial.</p>
+      <div style="margin-top:3mm">
+        <span class="tag">TypeScript</span><span class="tag">React</span><span class="tag">Next.js</span><span class="tag">Better Auth</span><span class="tag">Drizzle ORM</span><span class="tag">Cloudflare Workers</span><span class="tag">D1 (SQLite)</span><span class="tag">R2</span><span class="tag">React Email</span><span class="tag">Bun</span><span class="tag">Git y GitHub</span>
+      </div>
+      <div class="card" style="margin-top:6mm;background:var(--blue-soft);border-color:#cfe0ea">
+        <h3 style="color:var(--blue)">¿Para qué sirve cada una?</h3>
+        <p style="color:#3e5a6b"><b>React / Next.js:</b> para hacer las pantallas.<br><b>TypeScript:</b> JavaScript que avisa cuando hay un error.<br><b>Drizzle + D1:</b> para hablar con la base de datos.<br><b>Cloudflare:</b> donde vive la aplicación en internet.<br><b>Git:</b> guardar cada avance, como “puntos de control” de un videojuego.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span><b>SIJAC Aguadas</b> · Presentación SENA · Maria Clara Álvarez Toloza</span><span>11</span></div>
+</section>
+
+<!-- 12. CIERRE -->
+<section class="page" style="background:var(--g50)">
+  <div class="kicker">Para terminar</div>
+  <h2>Conclusiones</h2>
+  <div class="grid2" style="margin-top:4mm;gap:5mm">
+    <div class="card" style="background:#fff"><h3>Pensar en las personas</h3><p>Un programa no sirve si la gente no lo entiende. Por eso todo está en español sencillo y tiene un manual.</p></div>
+    <div class="card" style="background:#fff"><h3>Guardar cada avance</h3><p>Con Git cada cambio queda registrado, y siempre se puede volver a una versión anterior.</p></div>
+    <div class="card" style="background:#fff"><h3>Ir por partes</h3><p>Un sistema grande se vuelve manejable si se divide en módulos pequeños.</p></div>
+    <div class="card" style="background:#fff"><h3>La seguridad importa</h3><p>Proteger los datos de la comunidad es tan importante como que todo se vea bonito.</p></div>
+  </div>
+
+  <div style="margin-top:14mm;background:var(--g900);color:#e3ece7;border-radius:4mm;padding:9mm 10mm;display:flex;align-items:center;gap:8mm">
+    <div style="background:#fffdfa;border-radius:3mm;padding:3mm 4mm"><img src="img/sijac-logo.png" style="height:15mm;display:block" alt=""></div>
+    <div>
+      <div style="font-family:Fraunces,serif;font-size:21pt;color:#fff;line-height:1.15">¡Gracias por su atención!</div>
+      <p style="margin:2mm 0 0;font-size:10pt">SIJAC Aguadas es una herramienta útil para la comunidad de Aguadas. Espero sus preguntas y sugerencias.</p>
+      <p style="margin:3mm 0 0;font-size:9.5pt;color:#f0b9a2;font-weight:600">— Maria Clara Álvarez Toloza</p>
+    </div>
+  </div>
+  <div class="foot"><span><b>SIJAC Aguadas</b> · Presentación SENA · Maria Clara Álvarez Toloza</span><span>12</span></div>
+</section>
+
+</body>
+</html>

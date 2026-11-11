@@ -1,0 +1,10 @@
+{
+  "name": "sijac-presentacion-sena",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "capturas": "node scripts/shots.mjs img",
+    "pdf": "node scripts/pdf.mjs \"$PWD/presentacion.html\" ../SIJAC_Aguadas_Presentacion_SENA.pdf"
+  },
+  "devDependencies": { "puppeteer-core": "24.10.0" }
+}

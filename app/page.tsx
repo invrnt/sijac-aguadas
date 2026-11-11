@@ -40,7 +40,7 @@ export default async function WelcomePage() {
       <figure className="welcome-image">
         <Image
           src="/hero-aguadas.webp"
-          alt="Ilustración de Aguadas entre montañas del paisaje cafetero"
+          alt="Fuente y templo de la plaza principal de Aguadas, Caldas"
           fill
           priority
           sizes="(max-width: 800px) 100vw, 55vw"
