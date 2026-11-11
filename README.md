@@ -5,44 +5,78 @@ de Aguadas, Caldas. Incluye fichas institucionales, dignatarios, convenios,
 documentos privados, reuniones, actas, compromisos, actividades, reportes,
 usuarios, roles y auditoría.
 
-## Instalación con un clic
+## Instalación guiada
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/invrnt/sijac-aguadas)
+Pensada para quien no es técnico: todo se hace en el navegador y no hay que
+instalar nada en el equipo. Toma unos 30 minutos, casi todos de espera.
 
-Pensado para quien no es técnico. No hay que instalar nada en el equipo:
+### Antes de empezar (una sola vez)
 
-1. Pulse el botón e inicie sesión en Cloudflare (o cree una cuenta gratuita)
-   y conecte su cuenta de GitHub.
-2. Cloudflare crea solo la base de datos D1, el bucket privado R2, una copia
-   del repositorio en su GitHub y la compilación automática.
-3. Complete el único secreto que pide el formulario: `SETUP_CODE`, una clave
-   de instalación que usted inventa (mínimo 8 caracteres).
-4. Deje el nombre del proyecto como `sijac-aguadas` y pulse **Create and
-   deploy**. Las tablas de la base de datos se crean solas en la primera
-   visita.
-5. Abra la dirección `https://sijac-aguadas.<su-subdominio>.workers.dev`. La
-   aplicación lo lleva al asistente `/configuracion-inicial`, que revisa la
-   instalación, le indica en el panel de Cloudflare cómo corregir lo que falte
-   y crea las dos cuentas de administrador con la clave de instalación. Se
-   exigen dos para que la entidad no se quede sin acceso si una persona
-   olvida su contraseña o deja el cargo.
+Hágalo en este orden con la misma persona y el mismo correo institucional:
 
-Para que lleguen los correos (invitaciones y recuperación de contraseñas):
+1. **Cree una cuenta de GitHub** en [github.com/signup](https://github.com/signup).
+   Cloudflare guarda allí una copia del sistema y la usa para publicarlo.
+2. **Cree una cuenta de Cloudflare** en
+   [dash.cloudflare.com/sign-up](https://dash.cloudflare.com/sign-up).
+3. **Active el plan Workers Paid** (USD 5 al mes; le pedirá una tarjeta):
+   [Workers → Planes](https://dash.cloudflare.com/?to=/:account/workers/plans).
+4. **Active R2**, donde se guardan los documentos (gratis hasta 10 GB):
+   [R2 → Overview](https://dash.cloudflare.com/?to=/:account/r2/overview) y
+   complete el proceso de compra que aparece.
+5. **Compre el dominio `sijac.org`** en el
+   [panel de Cloudflare](https://dash.cloudflare.com/): menú **Domain
+   Registration → Register Domains**.
+6. **Active el envío de correos** con ese dominio: menú **Email Service →
+   Email Sending → Onboard Domain**, elija `sijac.org` y pulse **Add records
+   and onboard**. Cloudflare crea solo los registros DNS; tardan entre 5 y 15
+   minutos en quedar verificados.
 
-1. Active el plan **Workers Paid** (USD 5 al mes) en la misma cuenta.
-2. Compre el dominio `sijac.org` en Cloudflare Registrar.
-3. En **Email Service → Email Sending**, pulse **Onboard Domain**, elija
-   `sijac.org` y pulse **Add records and onboard**. Cloudflare crea solo los
-   registros SPF y DKIM.
+### Publicar el sistema
 
-No hay claves que copiar: el Worker envía con el binding `EMAIL`. Al crear los
-administradores, el asistente les manda un correo de prueba y, si falla, explica la
-causa. El remitente es `EMAIL_FROM` en `vars` de `wrangler.jsonc`
-(`SIJAC Aguadas <no-responder@sijac.org>`); cámbielo si usa otro dominio.
+7. Abra
+   [Cloudflare → Crear aplicación desde un repositorio público](https://dash.cloudflare.com/?to=/:account/workers-and-pages/create/deploy-to-workers)
+   y pegue esta dirección:
 
-Cada cambio que se suba a la copia del repositorio se vuelve a desplegar solo.
-La clave de sesiones (`BETTER_AUTH_SECRET`) es opcional: si no se registra,
-la aplicación genera una y la guarda en D1.
+   ```
+   https://github.com/invrnt/sijac-aguadas
+   ```
+
+   (Es lo mismo que pulsar este botón:
+   [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/invrnt/sijac-aguadas))
+8. Cuando lo pida, pulse **Connect GitHub** (o **Conectar GitHub**), inicie
+   sesión con la cuenta del paso 1 y autorice a Cloudflare. Cloudflare crea
+   allí su copia del repositorio.
+9. En la página de configuración:
+   - deje los nombres como están (`sijac-aguadas`, `sijac`, `sijac-private`);
+   - en `SETUP_CODE` invente una **clave de instalación** de al menos 8
+     caracteres y anótela;
+   - pulse **Create and deploy** y espere a que termine (unos 5 minutos).
+10. Abra la dirección que muestra Cloudflare
+    (`https://sijac-aguadas.<su-subdominio>.workers.dev`). El sistema lo
+    lleva al asistente de configuración inicial, que:
+    - revisa la base de datos, los documentos y el correo, y le dice cómo
+      corregir lo que falte con enlaces al panel de Cloudflare;
+    - le pide la clave de instalación y crea **dos cuentas de
+      administrador**, para que la entidad no se quede sin acceso si una
+      persona olvida su contraseña o deja el cargo;
+    - envía un correo de prueba a cada administrador.
+
+Listo. Las tablas de la base de datos se crean solas en la primera visita, y
+cada cambio que se suba a la copia del repositorio se vuelve a publicar solo.
+
+> El repositorio `invrnt/sijac-aguadas` debe ser **público**: Cloudflare no
+> puede copiar repositorios privados.
+
+### Detalles técnicos de la instalación
+
+- Los correos salen con el binding `EMAIL` (Cloudflare Email Sending), sin
+  claves. El remitente es `EMAIL_FROM` en `vars` de `wrangler.jsonc`
+  (`SIJAC Aguadas <no-responder@sijac.org>`); cámbielo si usa otro dominio.
+- La clave de sesiones (`BETTER_AUTH_SECRET`) es opcional: si no se registra,
+  la aplicación genera una y la guarda en D1.
+- `SETUP_CODE` solo se usa una vez. Si se olvida antes de usar el asistente,
+  se cambia en el proyecto `sijac-aguadas` → **Settings → Variables and
+  Secrets**.
 
 ## Stack
 

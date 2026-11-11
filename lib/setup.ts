@@ -104,10 +104,16 @@ export async function getSetupChecks(): Promise<SetupCheck[]> {
     required: true,
     detail: storageReady
       ? "El bucket privado R2 para documentos está conectado."
-      : "El bucket R2 no está conectado. Vuelva a desplegar el proyecto desde Cloudflare.",
+      : "El bucket R2 no está conectado. Revise que R2 esté activado en la cuenta (R2 → Overview, proceso de compra gratuito hasta 10 GB) y vuelva a desplegar el proyecto desde Cloudflare.",
     links: storageReady
       ? undefined
-      : [{ label: "Abrir Workers en Cloudflare", href: CLOUDFLARE_WORKERS_URL }],
+      : [
+          {
+            label: "Activar R2",
+            href: "https://dash.cloudflare.com/?to=/:account/r2/overview",
+          },
+          { label: "Abrir Workers en Cloudflare", href: CLOUDFLARE_WORKERS_URL },
+        ],
   });
 
   let secretReady = false;

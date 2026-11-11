@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
 import { authClient } from "@/lib/auth-client";
+import { roleLabel } from "@/lib/labels";
 import type { CurrentUser } from "@/lib/session";
 
 type NavItem = {
@@ -67,7 +68,13 @@ export function AppShell({
   const pathname = usePathname();
   const router = useRouter();
 
-  function active(href: string) {
+  function active(href: string): boolean {
+    if (href === "/mas") {
+      return (
+        pathname === "/mas" ||
+        !mobile.some((item) => item.href !== "/mas" && active(item.href))
+      );
+    }
     return href === "/panel"
       ? pathname === href
       : pathname === href || pathname.startsWith(`${href}/`);
@@ -100,6 +107,7 @@ export function AppShell({
             <Link
               key={item.href}
               className={`nav-item ${active(item.href) ? "nav-item-active" : ""}`}
+              aria-current={active(item.href) ? "page" : undefined}
               href={item.href}
             >
               <item.icon size={18} strokeWidth={1.9} aria-hidden="true" />
@@ -113,6 +121,7 @@ export function AppShell({
             <Link
               key={item.href}
               className={`nav-item ${active(item.href) ? "nav-item-active" : ""}`}
+              aria-current={active(item.href) ? "page" : undefined}
               href={item.href}
             >
               <item.icon size={18} strokeWidth={1.9} aria-hidden="true" />
@@ -128,6 +137,7 @@ export function AppShell({
                 <Link
                   key={item.href}
                   className={`nav-item ${active(item.href) ? "nav-item-active" : ""}`}
+                  aria-current={active(item.href) ? "page" : undefined}
                   href={item.href}
                 >
                   <item.icon size={18} strokeWidth={1.9} aria-hidden="true" />
@@ -144,7 +154,7 @@ export function AppShell({
             </span>
             <span>
               <strong>{user.name}</strong>
-              <span>{user.role === "admin" ? "Administrador" : user.role}</span>
+              <span>{roleLabel(user.role)}</span>
             </span>
           </div>
           <button
@@ -187,6 +197,7 @@ export function AppShell({
           <Link
             key={item.href}
             className={active(item.href) ? "nav-item-active" : ""}
+            aria-current={active(item.href) ? "page" : undefined}
             href={item.href}
           >
             <item.icon size={20} strokeWidth={1.9} aria-hidden="true" />

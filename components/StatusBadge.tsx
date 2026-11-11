@@ -1,4 +1,5 @@
 import { clsx } from "clsx";
+import { statusLabel } from "@/lib/labels";
 
 const green = new Set([
   "activa",
@@ -8,6 +9,9 @@ const green = new Set([
   "completado",
   "completada",
   "aprobada",
+  "finalizado",
+  "activo",
+  "asistio",
 ]);
 const amber = new Set([
   "pendiente",
@@ -15,9 +19,10 @@ const amber = new Set([
   "convocada",
   "en_revision",
   "aplazada",
+  "excusa",
 ]);
-const red = new Set(["archivada", "cancelada", "cancelado", "anulada", "bloqueado"]);
-const blue = new Set(["en_curso", "en_ejecucion", "suspendido"]);
+const red = new Set(["archivada", "cancelada", "cancelado", "anulada", "bloqueado", "no_asistio"]);
+const blue = new Set(["en_curso", "en_ejecucion", "suspendido", "planeada"]);
 
 export function StatusBadge({ status }: { status: string }) {
   const normalized = status.toLowerCase();
@@ -36,7 +41,7 @@ export function StatusBadge({ status }: { status: string }) {
           "status-gray",
       )}
     >
-      {status.replaceAll("_", " ")}
+      {statusLabel(status)}
     </span>
   );
 }

@@ -1,3 +1,4 @@
+import { actionLabel, entityLabel } from "@/lib/labels";
 import { Search } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { PrintButton } from "@/components/PrintButton";
@@ -38,9 +39,9 @@ export default async function AuditPage() {
             </time>
             <strong>{event.actor}</strong>
             <span>
-              {event.action} <b>{event.resource}</b>
+              {actionLabel(event.action)} <b>{event.resource}</b>
             </span>
-            <span>{event.entity}</span>
+            <span>{entityLabel(event.entity)}</span>
           </div>
         ))}
       </section>
