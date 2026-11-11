@@ -22,7 +22,9 @@ Pensado para quien no es técnico. No hay que instalar nada en el equipo:
 5. Abra la dirección `https://sijac-aguadas.<su-subdominio>.workers.dev`. La
    aplicación lo lleva al asistente `/configuracion-inicial`, que revisa la
    instalación, le indica en el panel de Cloudflare cómo corregir lo que falte
-   y crea la cuenta del administrador con la clave de instalación.
+   y crea las dos cuentas de administrador con la clave de instalación. Se
+   exigen dos para que la entidad no se quede sin acceso si una persona
+   olvida su contraseña o deja el cargo.
 
 Para que lleguen los correos (invitaciones y recuperación de contraseñas):
 
@@ -32,8 +34,8 @@ Para que lleguen los correos (invitaciones y recuperación de contraseñas):
    `sijac.org` y pulse **Add records and onboard**. Cloudflare crea solo los
    registros SPF y DKIM.
 
-No hay claves que copiar: el Worker envía con el binding `EMAIL`. Al crear el
-administrador, el asistente manda un correo de prueba y, si falla, explica la
+No hay claves que copiar: el Worker envía con el binding `EMAIL`. Al crear los
+administradores, el asistente les manda un correo de prueba y, si falla, explica la
 causa. El remitente es `EMAIL_FROM` en `vars` de `wrangler.jsonc`
 (`SIJAC Aguadas <no-responder@sijac.org>`); cámbielo si usa otro dominio.
 

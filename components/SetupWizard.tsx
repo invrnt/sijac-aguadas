@@ -27,13 +27,13 @@ type EmailResult = {
 
 const stepLabels: Record<Step, string> = {
   review: "Revisión",
-  account: "Administrador",
+  account: "Administradores",
   done: "Listo",
 };
 
 export function SetupWizard({ checks }: { checks: SetupCheck[] }) {
   const [step, setStep] = useState<Step>("review");
-  const [emailResult, setEmailResult] = useState<EmailResult | null>(null);
+  const [emailResults, setEmailResults] = useState<EmailResult[]>([]);
   const requiredReady = checks.every((check) => check.ok || !check.required);
 
   return (
@@ -61,13 +61,13 @@ export function SetupWizard({ checks }: { checks: SetupCheck[] }) {
       {step === "account" && (
         <AccountStep
           onBack={() => setStep("review")}
-          onDone={(result) => {
-            setEmailResult(result);
+          onDone={(results) => {
+            setEmailResults(results);
             setStep("done");
           }}
         />
       )}
-      {step === "done" && <DoneStep email={emailResult} />}
+      {step === "done" && <DoneStep emails={emailResults} />}
     </>
   );
 }
@@ -152,24 +152,126 @@ function ReviewStep({
   );
 }
 
+const ADMIN_SLOTS = [
+  {
+    key: "admin1",
+    legend: "Administrador principal",
+    hint: "Normalmente quien está haciendo esta instalación.",
+    usernamePlaceholder: "administrador",
+  },
+  {
+    key: "admin2",
+    legend: "Segundo administrador",
+    hint: "Otra persona de la entidad, por ejemplo quien la reemplaza. Si alguno pierde el acceso, el otro puede restablecerlo.",
+    usernamePlaceholder: "administrador2",
+  },
+] as const;
+
+function readAdmin(form: FormData, key: string) {
+  return {
+    name: String(form.get(`${key}.name`) ?? "").trim(),
+    email: String(form.get(`${key}.email`) ?? "").trim().toLowerCase(),
+    username: String(form.get(`${key}.username`) ?? "").trim().toLowerCase(),
+    password: String(form.get(`${key}.password`) ?? ""),
+    passwordConfirm: String(form.get(`${key}.passwordConfirm`) ?? ""),
+  };
+}
+
+function AdminFields({
+  slot,
+}: {
+  slot: (typeof ADMIN_SLOTS)[number];
+}) {
+  const [showPassword, setShowPassword] = useState(false);
+  const { key } = slot;
+  return (
+    <fieldset className="setup-admin">
+      <legend>{slot.legend}</legend>
+      <p className="form-hint">{slot.hint}</p>
+      <label>
+        <span>Nombre completo</span>
+        <input name={`${key}.name`} autoComplete="off" required minLength={3} maxLength={120} />
+      </label>
+      <label>
+        <span>Correo electrónico</span>
+        <input name={`${key}.email`} type="email" autoComplete="off" required maxLength={180} />
+      </label>
+      <label>
+        <span>Usuario para iniciar sesión</span>
+        <input
+          name={`${key}.username`}
+          autoComplete="off"
+          required
+          minLength={3}
+          maxLength={40}
+          pattern="[a-zA-Z0-9._\-]+"
+          title="Letras, números, punto, guion o guion bajo, sin espacios"
+          placeholder={slot.usernamePlaceholder}
+        />
+      </label>
+      <label>
+        <span>Contraseña</span>
+        <span className="password-field">
+          <input
+            name={`${key}.password`}
+            type={showPassword ? "text" : "password"}
+            autoComplete="new-password"
+            required
+            minLength={10}
+            maxLength={128}
+            placeholder="Mínimo 10 caracteres"
+          />
+          <button
+            type="button"
+            className="icon-button"
+            onClick={() => setShowPassword((value) => !value)}
+            aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
+        </span>
+      </label>
+      <label>
+        <span>Repita la contraseña</span>
+        <input
+          name={`${key}.passwordConfirm`}
+          type={showPassword ? "text" : "password"}
+          autoComplete="new-password"
+          required
+          minLength={10}
+          maxLength={128}
+        />
+      </label>
+    </fieldset>
+  );
+}
+
 function AccountStep({
   onBack,
   onDone,
 }: {
   onBack: () => void;
-  onDone: (email: EmailResult | null) => void;
+  onDone: (emails: EmailResult[]) => void;
 }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const formElement = event.currentTarget;
-    const form = new FormData(formElement);
-    const password = String(form.get("password") ?? "");
-    if (password !== String(form.get("passwordConfirm") ?? "")) {
-      setMessage("Las contraseñas no coinciden.");
+    const form = new FormData(event.currentTarget);
+    const [first, second] = ADMIN_SLOTS.map((slot) => readAdmin(form, slot.key));
+    if (first.password !== first.passwordConfirm) {
+      setMessage("Las contraseñas del administrador principal no coinciden.");
+      return;
+    }
+    if (second.password !== second.passwordConfirm) {
+      setMessage("Las contraseñas del segundo administrador no coinciden.");
+      return;
+    }
+    if (first.email === second.email || first.username === second.username) {
+      setMessage(
+        "Los dos administradores deben ser personas distintas, con correo y usuario diferentes.",
+      );
       return;
     }
     setMessage(null);
@@ -179,10 +281,12 @@ function AccountStep({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         setupCode: form.get("setupCode"),
-        name: form.get("name"),
-        email: form.get("email"),
-        username: form.get("username"),
-        password,
+        admins: [first, second].map((admin) => ({
+          name: admin.name,
+          email: admin.email,
+          username: admin.username,
+          password: admin.password,
+        })),
       }),
     }).catch(() => null);
     setLoading(false);
@@ -190,23 +294,24 @@ function AccountStep({
       setMessage("No hay conexión. Revise internet e intente de nuevo.");
       return;
     }
+    const body = (await response.json().catch(() => null)) as {
+      error?: string;
+      emails?: EmailResult[];
+    } | null;
     if (!response.ok) {
-      const body = (await response.json().catch(() => null)) as { error?: string } | null;
-      setMessage(body?.error ?? "No fue posible crear la cuenta.");
+      setMessage(body?.error ?? "No fue posible crear las cuentas.");
       return;
     }
-    const body = (await response.json().catch(() => null)) as {
-      email?: EmailResult;
-    } | null;
-    onDone(body?.email ?? null);
+    onDone(body?.emails ?? []);
   }
 
   return (
     <>
-      <h1>Cree la cuenta del administrador</h1>
+      <h1>Cree las cuentas de administrador</h1>
       <p>
-        Esta persona podrá crear las demás cuentas y configurar el sistema.
-        Use datos reales de la entidad.
+        Se crean dos administradores para que la entidad nunca se quede sin
+        acceso: si una persona olvida su contraseña o deja el cargo, la otra
+        puede gestionar las cuentas. Use datos reales.
       </p>
       <form className="stack-form" onSubmit={onSubmit}>
         <label>
@@ -219,60 +324,9 @@ function AccountStep({
             placeholder="La que escribió al desplegar en Cloudflare (SETUP_CODE)"
           />
         </label>
-        <label>
-          <span>Nombre completo</span>
-          <input name="name" autoComplete="name" required minLength={3} maxLength={120} />
-        </label>
-        <label>
-          <span>Correo electrónico</span>
-          <input name="email" type="email" autoComplete="email" required maxLength={180} />
-        </label>
-        <label>
-          <span>Usuario para iniciar sesión</span>
-          <input
-            name="username"
-            autoComplete="username"
-            required
-            minLength={3}
-            maxLength={40}
-            pattern="[a-zA-Z0-9._\-]+"
-            title="Letras, números, punto, guion o guion bajo, sin espacios"
-            placeholder="administrador"
-          />
-        </label>
-        <label>
-          <span>Contraseña</span>
-          <span className="password-field">
-            <input
-              name="password"
-              type={showPassword ? "text" : "password"}
-              autoComplete="new-password"
-              required
-              minLength={10}
-              maxLength={128}
-              placeholder="Mínimo 10 caracteres"
-            />
-            <button
-              type="button"
-              className="icon-button"
-              onClick={() => setShowPassword((value) => !value)}
-              aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-            >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
-          </span>
-        </label>
-        <label>
-          <span>Repita la contraseña</span>
-          <input
-            name="passwordConfirm"
-            type={showPassword ? "text" : "password"}
-            autoComplete="new-password"
-            required
-            minLength={10}
-            maxLength={128}
-          />
-        </label>
+        {ADMIN_SLOTS.map((slot) => (
+          <AdminFields key={slot.key} slot={slot} />
+        ))}
         {message && (
           <p className="form-message error-message" role="alert">
             {message}
@@ -282,10 +336,10 @@ function AccountStep({
           {loading ? (
             <>
               <LoaderCircle className="spin" size={18} />
-              Creando la cuenta…
+              Creando las cuentas…
             </>
           ) : (
-            "Crear administrador"
+            "Crear los dos administradores"
           )}
         </button>
         <button type="button" className="button button-ghost button-full" onClick={onBack} disabled={loading}>
@@ -311,8 +365,8 @@ function emailFailureHelp(code?: string) {
   }
 }
 
-function EmailStatus({ email }: { email: EmailResult | null }) {
-  if (!email || email.status === "skipped") {
+function EmailStatus({ emails }: { emails: EmailResult[] }) {
+  if (!emails.length || emails.every((email) => email.status === "skipped")) {
     return (
       <p className="form-message setup-email-warning">
         El envío de correos aún no está configurado. Puede activarlo después:
@@ -320,44 +374,62 @@ function EmailStatus({ email }: { email: EmailResult | null }) {
       </p>
     );
   }
-  if (email.status === "sent") {
-    return (
-      <p className="success-panel">
-        Enviamos un correo de prueba a <strong>{email.to}</strong>. Si llega,
-        el envío funciona. Si no lo ve en unos minutos, revise la carpeta de
-        spam.
-      </p>
-    );
-  }
+  const sent = emails.filter((email) => email.status === "sent");
+  const failed = emails.filter((email) => email.status === "failed");
   return (
-    <div className="form-message error-message" role="alert">
-      <p>
-        No se pudo enviar el correo de prueba a <strong>{email.to}</strong>
-        {email.code ? ` (código ${email.code})` : ""}.
-      </p>
-      <p>{emailFailureHelp(email.code)}</p>
-      <a className="text-link" href={CLOUDFLARE_DASHBOARD_URL} target="_blank" rel="noreferrer">
-        Abrir el panel de Cloudflare
-      </a>
-    </div>
+    <>
+      {sent.length > 0 && (
+        <p className="success-panel">
+          Enviamos un correo de prueba a{" "}
+          {sent.map((email, index) => (
+            <span key={email.to}>
+              {index > 0 && " y "}
+              <strong>{email.to}</strong>
+            </span>
+          ))}
+          . Si llega, el envío funciona. Si no lo ve en unos minutos, revise la
+          carpeta de spam.
+        </p>
+      )}
+      {failed.length > 0 && (
+        <div className="form-message error-message" role="alert">
+          <p>
+            No se pudo enviar el correo de prueba a{" "}
+            {failed.map((email, index) => (
+              <span key={email.to}>
+                {index > 0 && " ni a "}
+                <strong>{email.to}</strong>
+              </span>
+            ))}
+            {failed[0].code ? ` (código ${failed[0].code})` : ""}.
+          </p>
+          <p>{emailFailureHelp(failed[0].code)}</p>
+          <a className="text-link" href={CLOUDFLARE_DASHBOARD_URL} target="_blank" rel="noreferrer">
+            Abrir el panel de Cloudflare
+          </a>
+        </div>
+      )}
+    </>
   );
 }
 
-function DoneStep({ email }: { email: EmailResult | null }) {
-  const emailReady = email?.status === "sent";
+function DoneStep({ emails }: { emails: EmailResult[] }) {
+  const emailReady =
+    emails.length > 0 && emails.every((email) => email.status === "sent");
   return (
     <>
       <h1>¡SIJAC está listo!</h1>
       <div className="success-panel">
-        La cuenta de administrador quedó creada. Este asistente ya no volverá a
-        aparecer.
+        Las dos cuentas de administrador quedaron creadas. Este asistente ya no
+        volverá a aparecer.
       </div>
-      <EmailStatus email={email} />
+      <EmailStatus emails={emails} />
       <h2 className="setup-subtitle">Siguientes pasos</h2>
       <ol className="setup-next">
         <li>
-          <strong>Inicie sesión</strong> con el usuario o correo y la contraseña
-          que acaba de crear.
+          <strong>Inicien sesión</strong> cada uno con su usuario o correo y su
+          contraseña. Entregue al segundo administrador sus datos en persona,
+          nunca por chat o correo.
         </li>
         <li>
           <strong>Cree las cuentas del equipo</strong> desde el módulo Usuarios.

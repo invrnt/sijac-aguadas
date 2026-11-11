@@ -2458,3 +2458,22 @@ textarea:focus {
 .setup-card .error-message p {
   margin: 0 0 6px;
 }
+
+.setup-admin {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.setup-admin legend {
+  padding: 0 6px;
+  color: var(--green-900);
+  font-weight: 780;
+}
+
+.setup-admin .form-hint {
+  margin: -6px 0 0;
+}

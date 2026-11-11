@@ -60,7 +60,7 @@
   "cloudflare": {
     "bindings": {
       "SETUP_CODE": {
-        "description": "Invente una **clave de instalación** de al menos 8 caracteres y guárdela. Al terminar el despliegue, abra la dirección de la aplicación: el asistente de configuración se la pedirá una sola vez para crear la cuenta del administrador."
+        "description": "Invente una **clave de instalación** de al menos 8 caracteres y guárdela. Al terminar el despliegue, abra la dirección de la aplicación: el asistente de configuración se la pedirá una sola vez para crear las dos cuentas de administrador."
       }
     }
   }

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "@/db";
-import { auditLogs, rateLimits } from "@/db/schema";
+import { auditLogs, rateLimits, users } from "@/db/schema";
 import { getAuth } from "@/lib/auth";
 import { demoEnabled, env, setupCodeConfigured } from "@/lib/env";
 import { logger } from "@/lib/logger";
@@ -10,8 +10,7 @@ import { appOrigin } from "@/lib/origin";
 import { hasAdmin } from "@/lib/setup";
 import { sendSetupTestEmail } from "@/lib/setup-email";
 
-const payloadSchema = z.object({
-  setupCode: z.string().min(1).max(200),
+const adminSchema = z.object({
   name: z.string().trim().min(3).max(120),
   email: z.string().trim().toLowerCase().email().max(180),
   username: z
@@ -22,6 +21,13 @@ const payloadSchema = z.object({
     .max(40)
     .regex(/^[a-z0-9._-]+$/),
   password: z.string().min(10).max(128),
+});
+
+// Se exigen dos administradores para que perder el acceso de uno no deje la
+// instalación sin nadie que pueda gestionar cuentas.
+const payloadSchema = z.object({
+  setupCode: z.string().min(1).max(200),
+  admins: z.tuple([adminSchema, adminSchema]),
 });
 
 const MAX_FAILURES = 5;
@@ -83,7 +89,17 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Revise los datos: nombre de al menos 3 letras, correo válido, usuario con letras minúsculas, números, punto o guion, y contraseña de al menos 10 caracteres.",
+          "Revise los datos de los dos administradores: nombre de al menos 3 letras, correo válido, usuario con letras minúsculas, números, punto o guion, y contraseña de al menos 10 caracteres.",
+      },
+      { status: 422 },
+    );
+  }
+  const [first, second] = payload.data.admins;
+  if (first.email === second.email || first.username === second.username) {
+    return NextResponse.json(
+      {
+        error:
+          "Los dos administradores deben ser personas distintas, con correo y usuario diferentes.",
       },
       { status: 422 },
     );
@@ -116,51 +132,75 @@ export async function POST(request: Request) {
     );
   }
 
-  const { setupCode: _setupCode, ...account } = payload.data;
-  void _setupCode;
+  const auth = await getAuth(request.headers);
+  const createdIds: string[] = [];
   try {
-    const auth = await getAuth(request.headers);
-    const created = await auth.api.createUser({
-      body: {
-        email: account.email,
-        password: account.password,
-        name: account.name,
-        role: "admin",
-        data: { username: account.username, displayUsername: account.username },
-      },
-    });
-    await getDb().insert(auditLogs).values({
-      actorId: created.user.id,
-      actorEmail: created.user.email,
-      action: "create",
-      entityType: "user",
-      entityId: created.user.id,
-      newValues: { role: "admin", origin: "configuracion-inicial" },
-      ipAddress: ip,
-    });
-    logger.info("Asistente: administrador inicial creado", {
-      userId: created.user.id,
+    const created = [];
+    for (const account of payload.data.admins) {
+      const result = await auth.api.createUser({
+        body: {
+          email: account.email,
+          password: account.password,
+          name: account.name,
+          role: "admin",
+          data: { username: account.username, displayUsername: account.username },
+        },
+      });
+      createdIds.push(result.user.id);
+      created.push(result.user);
+    }
+
+    await getDb()
+      .insert(auditLogs)
+      .values(
+        created.map((user) => ({
+          actorId: user.id,
+          actorEmail: user.email,
+          action: "create",
+          entityType: "user",
+          entityId: user.id,
+          newValues: { role: "admin", origin: "configuracion-inicial" },
+          ipAddress: ip,
+        })),
+      );
+    logger.info("Asistente: administradores iniciales creados", {
+      userIds: createdIds,
     });
 
-    // Correo de prueba: confirma que el dominio quedó dado de alta. Si falla,
-    // la cuenta ya existe y el asistente explica cómo corregir el envío.
-    const email = await sendSetupTestEmail({
-      to: created.user.email,
-      name: created.user.name,
-      origin: appOrigin(request.headers),
-    });
-    return NextResponse.json(
-      { ok: true, email: { ...email, to: created.user.email } },
-      { status: 201 },
+    // Correo de prueba a cada administrador: confirma que el dominio quedó
+    // dado de alta. Si falla, las cuentas ya existen y el asistente explica
+    // cómo corregir el envío.
+    const origin = appOrigin(request.headers);
+    const emails = await Promise.all(
+      created.map(async (user) => ({
+        ...(await sendSetupTestEmail({ to: user.email, name: user.name, origin })),
+        to: user.email,
+      })),
     );
+    return NextResponse.json({ ok: true, emails }, { status: 201 });
   } catch (error) {
-    logger.error("Asistente: no se pudo crear el administrador", {
+    // Si el segundo falla, se borra el primero: con un solo administrador el
+    // asistente quedaría bloqueado. Sesiones y credenciales caen en cascada.
+    if (createdIds.length) {
+      await getDb()
+        .delete(users)
+        .where(inArray(users.id, createdIds))
+        .catch((cleanupError: unknown) =>
+          logger.error("Asistente: no se pudo deshacer la creación", {
+            error:
+              cleanupError instanceof Error
+                ? cleanupError.message
+                : String(cleanupError),
+          }),
+        );
+    }
+    logger.error("Asistente: no se pudieron crear los administradores", {
       error: error instanceof Error ? error.message : String(error),
     });
     return NextResponse.json(
       {
         error:
-          "No fue posible crear la cuenta. Verifique que el correo y el usuario no estén repetidos e intente de nuevo.",
+          "No fue posible crear las cuentas. Revise los datos e intente de nuevo.",
       },
       { status: 500 },
     );

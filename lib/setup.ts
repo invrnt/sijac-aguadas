@@ -21,7 +21,7 @@ export type SetupCheck = {
   id: "database" | "storage" | "authSecret" | "setupCode" | "email";
   label: string;
   ok: boolean;
-  // Si falta un requisito obligatorio, no se puede crear el administrador.
+  // Si falta un requisito obligatorio, no se pueden crear los administradores.
   required: boolean;
   detail: string;
   steps?: string[];
@@ -136,7 +136,7 @@ export async function getSetupChecks(): Promise<SetupCheck[]> {
     required: true,
     detail: setupCodeConfigured
       ? "La clave que eligió al desplegar está registrada. La pediremos en el siguiente paso."
-      : `Falta el secreto SETUP_CODE, o tiene menos de ${SETUP_CODE_MIN_LENGTH} caracteres. Protege este asistente para que nadie más cree el administrador.`,
+      : `Falta el secreto SETUP_CODE, o tiene menos de ${SETUP_CODE_MIN_LENGTH} caracteres. Protege este asistente para que nadie más cree los administradores.`,
     steps: setupCodeConfigured
       ? undefined
       : secretSteps(
@@ -149,7 +149,7 @@ export async function getSetupChecks(): Promise<SetupCheck[]> {
   });
 
   // No hay forma de saber si el dominio ya está dado de alta sin enviar un
-  // correo: la prueba real ocurre al crear el administrador (paso 2).
+  // correo: la prueba real ocurre al crear los administradores (paso 2).
   const provider = emailProvider();
   const senderDomain = parseSender(env.EMAIL_FROM).email.split("@")[1] ?? "";
   checks.push({
@@ -159,7 +159,7 @@ export async function getSetupChecks(): Promise<SetupCheck[]> {
     required: false,
     detail:
       provider === "cloudflare"
-        ? `Conectado a Cloudflare Email Sending. Los correos saldrán desde ${env.EMAIL_FROM}. Al crear el administrador le enviaremos un correo de prueba.`
+        ? `Conectado a Cloudflare Email Sending. Los correos saldrán desde ${env.EMAIL_FROM}. Al crear los administradores les enviaremos un correo de prueba.`
         : provider === "resend"
           ? `Conectado a Resend. Los correos saldrán desde ${env.EMAIL_FROM}.`
           : "Sin canal de correo. Puede seguir: el sistema funciona, pero no enviará invitaciones ni recuperaciones de contraseña.",
